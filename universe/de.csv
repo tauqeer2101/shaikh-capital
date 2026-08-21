@@ -1,0 +1,158 @@
+ticker,name,index
+ADS.DE,Adidas,DAX
+AIR.DE,Airbus,DAX
+ALV.DE,Allianz,DAX
+BAS.DE,BASF,DAX
+BAYN.DE,Bayer,DAX
+BEI.DE,Beiersdorf,DAX
+BMW.DE,BMW,DAX
+BNR.DE,Brenntag,DAX
+CBK.DE,Commerzbank,DAX
+CON.DE,Continental,DAX
+DTG.DE,Daimler Truck,DAX
+DBK.DE,Deutsche Bank,DAX
+DB1.DE,Deutsche Börse,DAX
+DHL.DE,Deutsche Post,DAX
+DTE.DE,Deutsche Telekom,DAX
+EOAN.DE,E.ON,DAX
+FRE.DE,Fresenius,DAX
+FME.DE,Fresenius Medical Care,DAX
+G1A.DE,GEA Group,DAX
+HNR1.DE,Hannover Re,DAX
+HEI.DE,Heidelberg Materials,DAX
+HEN3.DE,Henkel,DAX
+IFX.DE,Infineon Technologies,DAX
+MBG.DE,Mercedes-Benz Group,DAX
+MRK.DE,Merck,DAX
+MTX.DE,MTU Aero Engines,DAX
+MUV2.DE,Munich Re,DAX
+PAH3.DE,Porsche SE,DAX
+QIA.DE,Qiagen,DAX
+RHM.DE,Rheinmetall,DAX
+RWE.DE,RWE,DAX
+SAP.DE,SAP,DAX
+G24.DE,Scout24,DAX
+SIE.DE,Siemens,DAX
+ENR.DE,Siemens Energy,DAX
+SHL.DE,Siemens Healthineers,DAX
+SY1.DE,Symrise,DAX
+VOW3.DE,Volkswagen Group,DAX
+VNA.DE,Vonovia,DAX
+ZAL.DE,Zalando,DAX
+AIXA.DE,Aixtron,MDAX
+AT1.DE,Aroundtown,MDAX
+AMV0.DE,Aumovio,MDAX
+NDA.DE,Aurubis,MDAX
+AG1.DE,Auto1 Group,MDAX
+BC8.DE,Bechtle,MDAX
+GBF.DE,Bilfinger,MDAX
+EVD.DE,CTS Eventim,MDAX
+DHER.DE,Delivery Hero,MDAX
+LHA.DE,Deutsche Lufthansa,MDAX
+DEZ.DE,Deutz,MDAX
+DWS.DE,DWS Group GmbH & Co.,MDAX
+ELG.DE,Elmos Semiconductor,MDAX
+EVK.DE,Evonik Industries,MDAX
+FTK.DE,Flatexdegiro,MDAX
+FRA.DE,Fraport,MDAX
+FNTN.DE,Freenet,MDAX
+FPE.DE,Fuchs,MDAX
+HLE.DE,Hella GmbH & Co.,MDAX
+HAG.DE,Hensoldt,MDAX
+BOSS.DE,Hugo Boss,MDAX
+IOS.DE,Ionos Group,MDAX
+JEN.DE,Jenoptik,MDAX
+SDF.DE,K+S,MDAX
+KGX.DE,Kion Group,MDAX
+KBX.DE,Knorr-Bremse,MDAX
+KRN.DE,Krones,MDAX
+LXS.DE,Lanxess,MDAX
+LEG.DE,LEG Immobilien,MDAX
+NEM.DE,Nemetschek,MDAX
+NDX1.DE,Nordex,MDAX
+P911.DE,Porsche,MDAX
+PUM.DE,Puma,MDAX
+RAA.DE,Rational,MDAX
+R3NK.DE,Renk Group,MDAX
+RRTL.DE,RTL Group,MDAX
+SZG.DE,Salzgitter,MDAX
+SRT3.DE,Sartorius,MDAX
+SHA0.DE,Schaeffler,MDAX
+WAF.DE,Siltronic,MDAX
+SMHN.DE,Suss Microtec,MDAX
+TEG.DE,TAG Immobilien,MDAX
+TLX.DE,Talanx,MDAX
+TKA.DE,Thyssenkrupp,MDAX
+TKMS.DE,TKMS,MDAX
+8TRA.DE,Traton,MDAX
+TUI1.DE,TUI,MDAX
+UTDI.DE,United Internet,MDAX
+WCH.DE,Wacker Chemie,MDAX
+1U1.DE,1&1,SDAX
+ADV.DE,Adtran Networks,SDAX
+ACT.DE,AlzChem Group,SDAX
+AOF.DE,Atoss Software,SDAX
+BSL.DE,Basler,SDAX
+BFSA.DE,Befesa,SDAX
+COK.DE,Cancom,SDAX
+AFX.DE,Carl Zeiss Meditec,SDAX
+CWC.DE,Cewe Stiftung & Co.,SDAX
+DMP.DE,Dermapharm Holding,SDAX
+DBAN.DE,Deutsche Beteiligungs,SDAX
+DEQ.DE,Deutsche EuroShop,SDAX
+PBB.DE,Deutsche Pfandbriefbank,SDAX
+DOU.DE,Douglas Group,SDAX
+DRW3.DE,Drägerwerk,SDAX
+DUE.DE,Dürr,SDAX
+EUZ.DE,Eckert & Ziegler Strahlen- und Medizintechnik,SDAX
+EIN.DE,Einhell Germany,SDAX
+EKT.DE,Energiekontor,SDAX
+EVT.DE,Evotec,SDAX
+FIE.DE,Fielmann Group,SDAX
+VH2.DE,Friedrich Vorwerk,SDAX
+GFT.DE,GFT Technologies,SDAX
+GYC.DE,Grand City Properties,SDAX
+GLJ.DE,Grenke,SDAX
+HABA.DE,Hamborner Reit,SDAX
+HDD.DE,Heidelberger Druckmaschinen,SDAX
+HFG.DE,HelloFresh,SDAX
+HBH.DE,Hornbach Holding,SDAX
+HYQ.DE,Hypoport,SDAX
+INH.DE,Indus Holding,SDAX
+IXX.DE,INIT Innovation in Traffic Systems,SDAX
+JST.DE,Jost Werke,SDAX
+JUN3.DE,Jungheinrich,SDAX
+KTN.DE,Kontron,SDAX
+KSB3.DE,KSB,SDAX
+KWS.DE,KWS Saat,SDAX
+LPK.DE,LPKF Laser & Electronics,SDAX
+MBB.DE,MBB,SDAX
+ILM1.DE,Medios,SDAX
+MLP.DE,MLP,SDAX
+MUX.DE,Mutares,SDAX
+NA9.DE,Nagarro,SDAX
+NOEJ.DE,Norma Group,SDAX
+OHB.DE,OHB,SDAX
+OBCK.DE,Ottobock,SDAX
+PAT.DE,Patrizia,SDAX
+PNE3.DE,PNE,SDAX
+TPE.DE,PVA TePla,SDAX
+RDC.DE,Redcare Pharmacy,SDAX
+SFQ.DE,SAF-Holland,SDAX
+1SXP.DE,Schott Pharma,SDAX
+YSN.DE,Secunet Security Networks,SDAX
+F3C.DE,SFC Energy,SDAX
+SLYG.DE,Shelly Group,SDAX
+SIX2.DE,Sixt,SDAX
+S92.DE,SMA Solar Technology,SDAX
+SPG.DE,Springer Nature,SDAX
+STM.DE,Stabilus,SDAX
+STO3.DE,Sto,SDAX
+SBS.DE,Stratec,SDAX
+SAX.DE,Ströer,SDAX
+SZU.DE,Südzucker,SDAX
+TMV.DE,TeamViewer,SDAX
+TNIE.DE,tonies,SDAX
+VBK.DE,Verbio,SDAX
+VOS.DE,Vossloh,SDAX
+WAC.DE,Wacker Neuson,SDAX
