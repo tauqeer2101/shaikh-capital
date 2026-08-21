@@ -1,0 +1,14 @@
+# Local data & caches (downloaded market history, backtests, logs)
+data/
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+*.log
+
+# Private configuration (contains dashboard password & capital) — use config.example.json
+config.json
+
+# Virtualenv
+.venv/
+venv/
