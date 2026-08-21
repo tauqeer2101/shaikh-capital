@@ -1,0 +1,251 @@
+ticker,name,index
+ABB.NS,ABB India Ltd.,NIFTY 100
+ADANIENSOL.NS,Adani Energy Solutions Ltd.,NIFTY 100
+ADANIENT.NS,Adani Enterprises Ltd.,NIFTY 100
+ADANIGREEN.NS,Adani Green Energy Ltd.,NIFTY 100
+ADANIPORTS.NS,Adani Ports and Special Economic Zone Ltd.,NIFTY 100
+ADANIPOWER.NS,Adani Power Ltd.,NIFTY 100
+AMBUJACEM.NS,Ambuja Cements Ltd.,NIFTY 100
+APOLLOHOSP.NS,Apollo Hospitals Enterprise Ltd.,NIFTY 100
+ASIANPAINT.NS,Asian Paints Ltd.,NIFTY 100
+DMART.NS,Avenue Supermarts Ltd.,NIFTY 100
+AXISBANK.NS,Axis Bank Ltd.,NIFTY 100
+BAJAJ-AUTO.NS,Bajaj Auto Ltd.,NIFTY 100
+BAJFINANCE.NS,Bajaj Finance Ltd.,NIFTY 100
+BAJAJFINSV.NS,Bajaj Finserv Ltd.,NIFTY 100
+BAJAJHLDNG.NS,Bajaj Holdings & Investment Ltd.,NIFTY 100
+BANKBARODA.NS,Bank of Baroda,NIFTY 100
+BEL.NS,Bharat Electronics Ltd.,NIFTY 100
+BPCL.NS,Bharat Petroleum Corporation Ltd.,NIFTY 100
+BHARTIARTL.NS,Bharti Airtel Ltd.,NIFTY 100
+BOSCHLTD.NS,Bosch Ltd.,NIFTY 100
+BRITANNIA.NS,Britannia Industries Ltd.,NIFTY 100
+CGPOWER.NS,CG Power and Industrial Solutions Ltd.,NIFTY 100
+CANBK.NS,Canara Bank,NIFTY 100
+CHOLAFIN.NS,Cholamandalam Investment and Finance Company Ltd.,NIFTY 100
+CIPLA.NS,Cipla Ltd.,NIFTY 100
+COALINDIA.NS,Coal India Ltd.,NIFTY 100
+CUMMINSIND.NS,Cummins India Ltd.,NIFTY 100
+DLF.NS,DLF Ltd.,NIFTY 100
+DIVISLAB.NS,Divi's Laboratories Ltd.,NIFTY 100
+DRREDDY.NS,Dr. Reddy's Laboratories Ltd.,NIFTY 100
+EICHERMOT.NS,Eicher Motors Ltd.,NIFTY 100
+ETERNAL.NS,Eternal Ltd.,NIFTY 100
+GAIL.NS,GAIL (India) Ltd.,NIFTY 100
+GODREJCP.NS,Godrej Consumer Products Ltd.,NIFTY 100
+GRASIM.NS,Grasim Industries Ltd.,NIFTY 100
+HCLTECH.NS,HCL Technologies Ltd.,NIFTY 100
+HDFCAMC.NS,HDFC Asset Management Company Ltd.,NIFTY 100
+HDFCBANK.NS,HDFC Bank Ltd.,NIFTY 100
+HDFCLIFE.NS,HDFC Life Insurance Company Ltd.,NIFTY 100
+HINDALCO.NS,Hindalco Industries Ltd.,NIFTY 100
+HAL.NS,Hindustan Aeronautics Ltd.,NIFTY 100
+HINDUNILVR.NS,Hindustan Unilever Ltd.,NIFTY 100
+HINDZINC.NS,Hindustan Zinc Ltd.,NIFTY 100
+HYUNDAI.NS,Hyundai Motor India Ltd.,NIFTY 100
+ICICIBANK.NS,ICICI Bank Ltd.,NIFTY 100
+ITC.NS,ITC Ltd.,NIFTY 100
+INDHOTEL.NS,Indian Hotels Co. Ltd.,NIFTY 100
+IOC.NS,Indian Oil Corporation Ltd.,NIFTY 100
+IRFC.NS,Indian Railway Finance Corporation Ltd.,NIFTY 100
+INFY.NS,Infosys Ltd.,NIFTY 100
+INDIGO.NS,InterGlobe Aviation Ltd.,NIFTY 100
+JSWSTEEL.NS,JSW Steel Ltd.,NIFTY 100
+JINDALSTEL.NS,Jindal Steel Ltd.,NIFTY 100
+JIOFIN.NS,Jio Financial Services Ltd.,NIFTY 100
+KOTAKBANK.NS,Kotak Mahindra Bank Ltd.,NIFTY 100
+LTM.NS,LTM Ltd.,NIFTY 100
+LT.NS,Larsen & Toubro Ltd.,NIFTY 100
+LODHA.NS,Lodha Developers Ltd.,NIFTY 100
+M&M.NS,Mahindra & Mahindra Ltd.,NIFTY 100
+MARUTI.NS,Maruti Suzuki India Ltd.,NIFTY 100
+MAXHEALTH.NS,Max Healthcare Institute Ltd.,NIFTY 100
+MAZDOCK.NS,Mazagoan Dock Shipbuilders Ltd.,NIFTY 100
+MUTHOOTFIN.NS,Muthoot Finance Ltd.,NIFTY 100
+NTPC.NS,NTPC Ltd.,NIFTY 100
+NESTLEIND.NS,Nestle India Ltd.,NIFTY 100
+ONGC.NS,Oil & Natural Gas Corporation Ltd.,NIFTY 100
+PIDILITIND.NS,Pidilite Industries Ltd.,NIFTY 100
+PFC.NS,Power Finance Corporation Ltd.,NIFTY 100
+POWERGRID.NS,Power Grid Corporation of India Ltd.,NIFTY 100
+PNB.NS,Punjab National Bank,NIFTY 100
+RECLTD.NS,REC Ltd.,NIFTY 100
+RELIANCE.NS,Reliance Industries Ltd.,NIFTY 100
+SBILIFE.NS,SBI Life Insurance Company Ltd.,NIFTY 100
+MOTHERSON.NS,Samvardhana Motherson International Ltd.,NIFTY 100
+SHREECEM.NS,Shree Cement Ltd.,NIFTY 100
+SHRIRAMFIN.NS,Shriram Finance Ltd.,NIFTY 100
+ENRIN.NS,Siemens Energy India Ltd.,NIFTY 100
+SIEMENS.NS,Siemens Ltd.,NIFTY 100
+SOLARINDS.NS,Solar Industries India Ltd.,NIFTY 100
+SBIN.NS,State Bank of India,NIFTY 100
+SUNPHARMA.NS,Sun Pharmaceutical Industries Ltd.,NIFTY 100
+TVSMOTOR.NS,TVS Motor Company Ltd.,NIFTY 100
+TATACAP.NS,Tata Capital Ltd.,NIFTY 100
+TCS.NS,Tata Consultancy Services Ltd.,NIFTY 100
+TATACONSUM.NS,Tata Consumer Products Ltd.,NIFTY 100
+TMCV.NS,Tata Motors Ltd.,NIFTY 100
+TMPV.NS,Tata Motors Passenger Vehicles Ltd.,NIFTY 100
+TATAPOWER.NS,Tata Power Co. Ltd.,NIFTY 100
+TATASTEEL.NS,Tata Steel Ltd.,NIFTY 100
+TECHM.NS,Tech Mahindra Ltd.,NIFTY 100
+TITAN.NS,Titan Company Ltd.,NIFTY 100
+TORNTPHARM.NS,Torrent Pharmaceuticals Ltd.,NIFTY 100
+TRENT.NS,Trent Ltd.,NIFTY 100
+ULTRACEMCO.NS,UltraTech Cement Ltd.,NIFTY 100
+UNIONBANK.NS,Union Bank of India,NIFTY 100
+UNITDSPR.NS,United Spirits Ltd.,NIFTY 100
+VBL.NS,Varun Beverages Ltd.,NIFTY 100
+VEDL.NS,Vedanta Ltd.,NIFTY 100
+WIPRO.NS,Wipro Ltd.,NIFTY 100
+ZYDUSLIFE.NS,Zydus Lifesciences Ltd.,NIFTY 100
+360ONE.NS,360 ONE WAM Ltd.,NIFTY Midcap 150
+3MINDIA.NS,3M India Ltd.,NIFTY Midcap 150
+ACC.NS,ACC Ltd.,NIFTY Midcap 150
+AIAENG.NS,AIA Engineering Ltd.,NIFTY Midcap 150
+APLAPOLLO.NS,APL Apollo Tubes Ltd.,NIFTY Midcap 150
+AUBANK.NS,AU Small Finance Bank Ltd.,NIFTY Midcap 150
+AWL.NS,AWL Agri Business Ltd.,NIFTY Midcap 150
+ABBOTINDIA.NS,Abbott India Ltd.,NIFTY Midcap 150
+ATGL.NS,Adani Total Gas Ltd.,NIFTY Midcap 150
+ABCAPITAL.NS,Aditya Birla Capital Ltd.,NIFTY Midcap 150
+AJANTPHARM.NS,Ajanta Pharmaceuticals Ltd.,NIFTY Midcap 150
+ALKEM.NS,Alkem Laboratories Ltd.,NIFTY Midcap 150
+ANTHEM.NS,Anthem Biosciences Ltd.,NIFTY Midcap 150
+APARINDS.NS,Apar Industries Ltd.,NIFTY Midcap 150
+APOLLOTYRE.NS,Apollo Tyres Ltd.,NIFTY Midcap 150
+ASHOKLEY.NS,Ashok Leyland Ltd.,NIFTY Midcap 150
+ASTRAL.NS,Astral Ltd.,NIFTY Midcap 150
+AUROPHARMA.NS,Aurobindo Pharma Ltd.,NIFTY Midcap 150
+AIIL.NS,Authum Investment & Infrastructure Ltd.,NIFTY Midcap 150
+BSE.NS,BSE Ltd.,NIFTY Midcap 150
+BAJAJHFL.NS,Bajaj Housing Finance Ltd.,NIFTY Midcap 150
+BALKRISIND.NS,Balkrishna Industries Ltd.,NIFTY Midcap 150
+BANKINDIA.NS,Bank of India,NIFTY Midcap 150
+MAHABANK.NS,Bank of Maharashtra,NIFTY Midcap 150
+BERGEPAINT.NS,Berger Paints India Ltd.,NIFTY Midcap 150
+BDL.NS,Bharat Dynamics Ltd.,NIFTY Midcap 150
+BHARATFORG.NS,Bharat Forge Ltd.,NIFTY Midcap 150
+BHEL.NS,Bharat Heavy Electricals Ltd.,NIFTY Midcap 150
+BHARTIHEXA.NS,Bharti Hexacom Ltd.,NIFTY Midcap 150
+GROWW.NS,Billionbrains Garage Ventures Ltd.,NIFTY Midcap 150
+BIOCON.NS,Biocon Ltd.,NIFTY Midcap 150
+BLUESTARCO.NS,Blue Star Ltd.,NIFTY Midcap 150
+CRISIL.NS,CRISIL Ltd.,NIFTY Midcap 150
+COCHINSHIP.NS,Cochin Shipyard Ltd.,NIFTY Midcap 150
+COFORGE.NS,Coforge Ltd.,NIFTY Midcap 150
+COLPAL.NS,Colgate Palmolive (India) Ltd.,NIFTY Midcap 150
+CONCOR.NS,Container Corporation of India Ltd.,NIFTY Midcap 150
+COROMANDEL.NS,Coromandel International Ltd.,NIFTY Midcap 150
+DABUR.NS,Dabur India Ltd.,NIFTY Midcap 150
+DALBHARAT.NS,Dalmia Bharat Ltd.,NIFTY Midcap 150
+DIXON.NS,Dixon Technologies (India) Ltd.,NIFTY Midcap 150
+ENDURANCE.NS,Endurance Technologies Ltd.,NIFTY Midcap 150
+ESCORTS.NS,Escorts Kubota Ltd.,NIFTY Midcap 150
+EXIDEIND.NS,Exide Industries Ltd.,NIFTY Midcap 150
+NYKAA.NS,FSN E-Commerce Ventures Ltd.,NIFTY Midcap 150
+FEDERALBNK.NS,Federal Bank Ltd.,NIFTY Midcap 150
+FORTIS.NS,Fortis Healthcare Ltd.,NIFTY Midcap 150
+GVT&D.NS,GE Vernova T&D India Ltd.,NIFTY Midcap 150
+GMRAIRPORT.NS,GMR Airports Ltd.,NIFTY Midcap 150
+GICRE.NS,General Insurance Corporation of India,NIFTY Midcap 150
+GLAXO.NS,Glaxosmithkline Pharmaceuticals Ltd.,NIFTY Midcap 150
+GLENMARK.NS,Glenmark Pharmaceuticals Ltd.,NIFTY Midcap 150
+MEDANTA.NS,Global Health Ltd.,NIFTY Midcap 150
+GODFRYPHLP.NS,Godfrey Phillips India Ltd.,NIFTY Midcap 150
+GODREJIND.NS,Godrej Industries Ltd.,NIFTY Midcap 150
+GODREJPROP.NS,Godrej Properties Ltd.,NIFTY Midcap 150
+FLUOROCHEM.NS,Gujarat Fluorochemicals Ltd.,NIFTY Midcap 150
+HDBFS.NS,HDB Financial Services Ltd.,NIFTY Midcap 150
+HAVELLS.NS,Havells India Ltd.,NIFTY Midcap 150
+HEROMOTOCO.NS,Hero MotoCorp Ltd.,NIFTY Midcap 150
+HEXT.NS,Hexaware Technologies Ltd.,NIFTY Midcap 150
+HINDPETRO.NS,Hindustan Petroleum Corporation Ltd.,NIFTY Midcap 150
+POWERINDIA.NS,Hitachi Energy India Ltd.,NIFTY Midcap 150
+HONAUT.NS,Honeywell Automation India Ltd.,NIFTY Midcap 150
+HUDCO.NS,Housing & Urban Development Corporation Ltd.,NIFTY Midcap 150
+ICICIGI.NS,ICICI Lombard General Insurance Company Ltd.,NIFTY Midcap 150
+ICICIAMC.NS,ICICI Prudential Asset Management Company Ltd.,NIFTY Midcap 150
+ICICIPRULI.NS,ICICI Prudential Life Insurance Company Ltd.,NIFTY Midcap 150
+IDFCFIRSTB.NS,IDFC First Bank Ltd.,NIFTY Midcap 150
+ITCHOTELS.NS,ITC Hotels Ltd.,NIFTY Midcap 150
+INDIANB.NS,Indian Bank,NIFTY Midcap 150
+IRCTC.NS,Indian Railway Catering And Tourism Corporation Ltd.,NIFTY Midcap 150
+IREDA.NS,Indian Renewable Energy Development Agency Ltd.,NIFTY Midcap 150
+INDUSTOWER.NS,Indus Towers Ltd.,NIFTY Midcap 150
+INDUSINDBK.NS,IndusInd Bank Ltd.,NIFTY Midcap 150
+NAUKRI.NS,Info Edge (India) Ltd.,NIFTY Midcap 150
+IPCALAB.NS,Ipca Laboratories Ltd.,NIFTY Midcap 150
+JKCEMENT.NS,J.K. Cement Ltd.,NIFTY Midcap 150
+JSWENERGY.NS,JSW Energy Ltd.,NIFTY Midcap 150
+JSWINFRA.NS,JSW Infrastructure Ltd.,NIFTY Midcap 150
+JSL.NS,Jindal Stainless Ltd.,NIFTY Midcap 150
+JUBLFOOD.NS,Jubilant Foodworks Ltd.,NIFTY Midcap 150
+KPRMILL.NS,K.P.R. Mill Ltd.,NIFTY Midcap 150
+KEI.NS,KEI Industries Ltd.,NIFTY Midcap 150
+KPITTECH.NS,KPIT Technologies Ltd.,NIFTY Midcap 150
+KALYANKJIL.NS,Kalyan Jewellers India Ltd.,NIFTY Midcap 150
+LTF.NS,L&T Finance Ltd.,NIFTY Midcap 150
+LTTS.NS,L&T Technology Services Ltd.,NIFTY Midcap 150
+LGEINDIA.NS,LG Electronics India Ltd.,NIFTY Midcap 150
+LICHSGFIN.NS,LIC Housing Finance Ltd.,NIFTY Midcap 150
+LAURUSLABS.NS,Laurus Labs Ltd.,NIFTY Midcap 150
+LENSKART.NS,Lenskart Solutions Ltd.,NIFTY Midcap 150
+LICI.NS,Life Insurance Corporation of India,NIFTY Midcap 150
+LINDEINDIA.NS,Linde India Ltd.,NIFTY Midcap 150
+LLOYDSME.NS,Lloyds Metals And Energy Ltd.,NIFTY Midcap 150
+LUPIN.NS,Lupin Ltd.,NIFTY Midcap 150
+MRF.NS,MRF Ltd.,NIFTY Midcap 150
+M&MFIN.NS,Mahindra & Mahindra Financial Services Ltd.,NIFTY Midcap 150
+MANKIND.NS,Mankind Pharma Ltd.,NIFTY Midcap 150
+MARICO.NS,Marico Ltd.,NIFTY Midcap 150
+MFSL.NS,Max Financial Services Ltd.,NIFTY Midcap 150
+MOTILALOFS.NS,Motilal Oswal Financial Services Ltd.,NIFTY Midcap 150
+MPHASIS.NS,MphasiS Ltd.,NIFTY Midcap 150
+MCX.NS,Multi Commodity Exchange of India Ltd.,NIFTY Midcap 150
+NHPC.NS,NHPC Ltd.,NIFTY Midcap 150
+NLCINDIA.NS,NLC India Ltd.,NIFTY Midcap 150
+NMDC.NS,NMDC Ltd.,NIFTY Midcap 150
+NTPCGREEN.NS,NTPC Green Energy Ltd.,NIFTY Midcap 150
+NATIONALUM.NS,National Aluminium Co. Ltd.,NIFTY Midcap 150
+NAM-INDIA.NS,Nippon Life India Asset Management Ltd.,NIFTY Midcap 150
+OBEROIRLTY.NS,Oberoi Realty Ltd.,NIFTY Midcap 150
+OIL.NS,Oil India Ltd.,NIFTY Midcap 150
+PAYTM.NS,One 97 Communications Ltd.,NIFTY Midcap 150
+OFSS.NS,Oracle Financial Services Software Ltd.,NIFTY Midcap 150
+POLICYBZR.NS,PB Fintech Ltd.,NIFTY Midcap 150
+PIIND.NS,PI Industries Ltd.,NIFTY Midcap 150
+PAGEIND.NS,Page Industries Ltd.,NIFTY Midcap 150
+PATANJALI.NS,Patanjali Foods Ltd.,NIFTY Midcap 150
+PERSISTENT.NS,Persistent Systems Ltd.,NIFTY Midcap 150
+PETRONET.NS,Petronet LNG Ltd.,NIFTY Midcap 150
+PHOENIXLTD.NS,Phoenix Mills Ltd.,NIFTY Midcap 150
+POLYCAB.NS,Polycab India Ltd.,NIFTY Midcap 150
+PREMIERENE.NS,Premier Energies Ltd.,NIFTY Midcap 150
+PRESTIGE.NS,Prestige Estates Projects Ltd.,NIFTY Midcap 150
+RADICO.NS,Radico Khaitan Ltd,NIFTY Midcap 150
+RVNL.NS,Rail Vikas Nigam Ltd.,NIFTY Midcap 150
+SBICARD.NS,SBI Cards and Payment Services Ltd.,NIFTY Midcap 150
+SJVN.NS,SJVN Ltd.,NIFTY Midcap 150
+SRF.NS,SRF Ltd.,NIFTY Midcap 150
+SCHAEFFLER.NS,Schaeffler India Ltd.,NIFTY Midcap 150
+SAIL.NS,Steel Authority of India Ltd.,NIFTY Midcap 150
+SUNDARMFIN.NS,Sundaram Finance Ltd.,NIFTY Midcap 150
+SUPREMEIND.NS,Supreme Industries Ltd.,NIFTY Midcap 150
+SUZLON.NS,Suzlon Energy Ltd.,NIFTY Midcap 150
+SWIGGY.NS,Swiggy Ltd.,NIFTY Midcap 150
+TATACOMM.NS,Tata Communications Ltd.,NIFTY Midcap 150
+TATAELXSI.NS,Tata Elxsi Ltd.,NIFTY Midcap 150
+TATAINVEST.NS,Tata Investment Corporation Ltd.,NIFTY Midcap 150
+NIACL.NS,The New India Assurance Company Ltd.,NIFTY Midcap 150
+THERMAX.NS,Thermax Ltd.,NIFTY Midcap 150
+TORNTPOWER.NS,Torrent Power Ltd.,NIFTY Midcap 150
+TIINDIA.NS,Tube Investments of India Ltd.,NIFTY Midcap 150
+UNOMINDA.NS,UNO Minda Ltd.,NIFTY Midcap 150
+UPL.NS,UPL Ltd.,NIFTY Midcap 150
+UBL.NS,United Breweries Ltd.,NIFTY Midcap 150
+VMM.NS,Vishal Mega Mart Ltd.,NIFTY Midcap 150
+IDEA.NS,Vodafone Idea Ltd.,NIFTY Midcap 150
+VOLTAS.NS,Voltas Ltd.,NIFTY Midcap 150
+WAAREEENER.NS,Waaree Energies Ltd.,NIFTY Midcap 150
+YESBANK.NS,Yes Bank Ltd.,NIFTY Midcap 150
