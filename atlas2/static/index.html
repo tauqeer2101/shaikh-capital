@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Shaikh Capital — trade smart</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+  /* apply saved theme before first paint to avoid a flash */
+  document.documentElement.dataset.theme = localStorage.getItem("sc-theme") || "dark";
+</script>
+<script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+<style>
+  :root[data-theme="dark"] {
+    --bg: #0c0e1a; --panel: #141829; --panel2: #1a1f36; --border: #242b49;
+    --text: #eef0fa; --dim: #9aa3c4; --faint: #5e6787;
+    --green: #2dd4a7; --green-bg: #2dd4a71f; --red: #f4527b; --red-bg: #f4527b1f;
+    --amber: #f0b429; --amber-bg: #f0b42920; --blue: #4cc9f0; --blue-bg: #4cc9f01c;
+    --accent: #8b5cf6; --accent-text: #ffffff;
+    --btn-bg: linear-gradient(135deg, #8b5cf6, #ec4899);
+    --grad: linear-gradient(135deg, #a855f7, #ec4899);
+    --grad2: linear-gradient(135deg, #22d3ee, #6366f1);
+    --grad3: linear-gradient(135deg, #f43f5e, #f97316);
+    --shadow: 0 4px 20px rgba(0,0,0,.35); --hover: #171c31; --sel: #21294d; --row-line: #171c30;
+    --tint-green: #2dd4a712; --tint-blue: #4cc9f00f; --tint-red: #f4527b12; --tint-amber: #f0b42910;
+    --bd-green: #1f8a6d; --bd-blue: #2b6f8f; --bd-red: #a53d5c; --bd-amber: #99732a;
+    --header-bg: linear-gradient(180deg, #11142a, #0c0e1a);
+    --chart-grid: #171c30;
+  }
+  :root[data-theme="light"] {
+    --bg: #f4f7fc; --panel: #ffffff; --panel2: #ffffff; --border: #e2e8f2;
+    --text: #1f2a3d; --dim: #5b6779; --faint: #8a94a6;
+    --green: #188038; --green-bg: #e6f4ea; --red: #d93025; --red-bg: #fce8e6;
+    --amber: #b26a00; --amber-bg: #fef3e0; --blue: #1a73e8; --blue-bg: #e8f0fe;
+    --accent: #1a73e8; --accent-text: #ffffff;
+    --btn-bg: #1a73e8;
+    --grad: linear-gradient(135deg, #1a73e8, #7c5cff);
+    --grad2: linear-gradient(135deg, #12b5cb, #1a73e8);
+    --grad3: linear-gradient(135deg, #f9ab00, #ea4c89);
+    --shadow: 0 1px 2px rgba(16,24,40,.05), 0 4px 14px rgba(16,24,40,.07);
+    --hover: #f4f8fe; --sel: #e8f0fe; --row-line: #eef2f8;
+    --tint-green: #e6f4ea; --tint-blue: #e8f0fe; --tint-red: #fce8e6; --tint-amber: #fef3e0;
+    --bd-green: #b7dfc3; --bd-blue: #c3d9f7; --bd-red: #f5c4c0; --bd-amber: #f2dcb3;
+    --header-bg: #ffffff;
+    --chart-grid: #eef2f8;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--text);
+         font: 13.5px/1.55 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; }
+
+  /* ---------- header ---------- */
+  header { display: flex; align-items: center; gap: 14px; padding: 12px 20px;
+           border-bottom: 1px solid var(--border); flex-wrap: wrap;
+           background: var(--header-bg); box-shadow: var(--shadow); position: relative; z-index: 20; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .logo { width: 32px; height: 32px; border-radius: 9px; background: var(--grad);
+          display: grid; place-items: center; font-weight: 800; font-size: 14px; color: #fff; }
+  header h1 { font-size: 16px; margin: 0; letter-spacing: -.01em; }
+  header h1 small { color: var(--dim); font-weight: 400; font-size: 12px; margin-left: 6px; }
+  .tabs { display: flex; gap: 4px; background: var(--bg); border: 1px solid var(--border);
+          border-radius: 10px; padding: 3px; }
+  .tab { padding: 6px 14px; border-radius: 8px; color: var(--dim); cursor: pointer;
+         font-size: 13px; border: none; background: transparent; transition: .15s; }
+  .tab:hover { color: var(--text); }
+  .tab.active { background: var(--btn-bg); color: var(--accent-text); }
+  .search { position: relative; min-width: 220px; flex: 0 1 300px; }
+  .search input { width: 100%; background: var(--bg); color: var(--text);
+                  border: 1px solid var(--border); border-radius: 10px;
+                  padding: 8px 12px; font-size: 13px; transition: .15s; }
+  .search input:focus { outline: none; border-color: var(--accent);
+                        box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent); }
+  #sr { position: absolute; top: 40px; left: 0; right: 0; z-index: 50;
+        background: var(--panel2); border: 1px solid var(--border); border-radius: 10px;
+        max-height: 340px; overflow-y: auto; display: none;
+        box-shadow: 0 12px 32px rgba(0,0,0,.25); }
+  #sr .item { padding: 9px 12px; cursor: pointer; display: flex; gap: 8px;
+              align-items: baseline; border-bottom: 1px solid var(--row-line); }
+  #sr .item:last-child { border-bottom: none; }
+  #sr .item:hover { background: var(--hover); }
+  #sr .item .t { font-weight: 600; min-width: 92px; }
+  #sr .item .n { color: var(--dim); font-size: 12px; flex: 1; overflow: hidden;
+                 text-overflow: ellipsis; white-space: nowrap; }
+  #sr .item .x { color: var(--faint); font-size: 11px; }
+  .hbtn { background: var(--panel); border: 1px solid var(--border);
+          color: var(--dim); border-radius: 10px; padding: 7px 13px; cursor: pointer;
+          font-size: 13px; transition: .15s; }
+  .hbtn:hover { color: var(--text); border-color: var(--accent); }
+  .hgroup { margin-left: auto; display: flex; gap: 8px; }
+
+  /* ---------- overview strip ---------- */
+  #overview { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+              gap: 12px; padding: 14px 20px 6px; }
+  .ov { background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+        padding: 13px 15px 11px; cursor: pointer; transition: .15s;
+        box-shadow: var(--shadow); position: relative; overflow: hidden; }
+  .ov::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+                background: var(--grad); }
+  .ov:nth-child(2)::before { background: var(--grad2); }
+  .ov:nth-child(3)::before { background: var(--grad3); }
+  .ov:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .ov .mkt { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+  .ov .chip { margin-left: auto; font-size: 11px; padding: 2px 9px; border-radius: 10px;
+              font-weight: 600; }
+  .chip.healthy { background: var(--green-bg); color: var(--green); }
+  .chip.caution { background: var(--amber-bg); color: var(--amber); }
+  .chip.downtrend { background: var(--red-bg); color: var(--red); }
+  .chip.unknown, .chip.off { background: var(--bg); color: var(--dim); }
+  .ov .nums { display: flex; gap: 14px; margin-top: 8px; font-size: 12px; color: var(--dim); }
+  .ov .nums b { display: block; color: var(--text); font-size: 15px; }
+  .ov .top { margin-top: 8px; font-size: 12px; color: var(--dim);
+             border-top: 1px solid var(--row-line); padding-top: 7px; }
+  .ov .top b { color: var(--text); }
+
+  /* ---------- layout ---------- */
+  main { display: grid; grid-template-columns: minmax(390px, 40%) 1fr;
+         height: calc(100vh - 179px); min-height: 400px; }
+  #list { overflow-y: auto; border-right: 1px solid var(--border); }
+  #detail { overflow-y: auto; padding: 16px 22px; }
+  main.wide { grid-template-columns: 1fr; }
+  main.wide #list { display: none; }
+
+  /* ---------- table ---------- */
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th { text-align: left; color: var(--faint); font-weight: 600; padding: 9px 8px;
+       position: sticky; top: 0; background: var(--bg); z-index: 5;
+       border-bottom: 1px solid var(--border); font-size: 11px;
+       text-transform: uppercase; letter-spacing: .05em; }
+  td { padding: 8px; border-bottom: 1px solid var(--row-line); }
+  tr.row { cursor: pointer; transition: .1s; }
+  tr.row:hover { background: var(--hover); }
+  tr.row.sel { background: var(--sel); box-shadow: inset 3px 0 0 var(--accent); }
+  .grade { display: inline-grid; place-items: center; width: 24px; height: 24px;
+           border-radius: 7px; font-weight: 800; font-size: 13px; }
+  .grade.A { background: #1a7f37; color: #fff; }
+  .grade.B { background: #b26a00; color: #fff; }
+  .grade.C { background: var(--border); color: var(--dim); }
+  .status { font-size: 10.5px; padding: 2px 8px; border-radius: 10px; font-weight: 600;
+            white-space: nowrap; }
+  .status.triggered { background: var(--green-bg); color: var(--green); }
+  .status.forming { background: var(--blue-bg); color: var(--blue); }
+  .tick { font-weight: 650; }
+  .dim { color: var(--dim); } .faint { color: var(--faint); }
+  .pos { color: var(--green); } .neg { color: var(--red); }
+  .ewarn { color: var(--amber); font-size: 11px; font-weight: 700; cursor: help; }
+
+  /* ---------- detail ---------- */
+  h2 { font-size: 17px; margin: 2px 0 2px; letter-spacing: -.01em; }
+  h3 { font-size: 11.5px; color: var(--faint); margin: 20px 0 8px;
+       text-transform: uppercase; letter-spacing: .07em; }
+  #chart { height: var(--chart-h, 420px); border: 1px solid var(--border); border-radius: 14px;
+           margin-top: 12px; overflow: hidden; background: var(--panel);
+           box-shadow: var(--shadow); position: relative; }
+  #chart.fs { position: fixed; inset: 0; z-index: 90; height: 100vh; width: 100vw;
+              margin: 0; border-radius: 0; border: none; }
+  .chartranges { position: absolute; top: 8px; right: 46px; z-index: 7; display: flex; gap: 2px;
+                 background: color-mix(in srgb, var(--panel) 80%, transparent);
+                 border: 1px solid var(--border); border-radius: 8px; padding: 2px;
+                 backdrop-filter: blur(4px); }
+  .chartranges button { background: transparent; border: none; color: var(--dim);
+                        font-size: 11px; padding: 2px 8px; border-radius: 6px; cursor: pointer; }
+  .chartranges button.on { background: var(--accent); color: #fff; }
+  .chartlegend { position: absolute; top: 8px; left: 8px; z-index: 7;
+                 display: flex; gap: 12px; align-items: center; font-size: 11px;
+                 color: var(--dim); background: color-mix(in srgb, var(--panel) 80%, transparent);
+                 padding: 4px 11px; border-radius: 8px; backdrop-filter: blur(4px);
+                 border: 1px solid var(--border); pointer-events: none; }
+  .chartlegend span { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+  .chartlegend i { display: inline-block; width: 10px; height: 3px; border-radius: 2px; }
+  .chartexpand { position: absolute; top: 8px; right: 8px; z-index: 7;
+                 background: color-mix(in srgb, var(--panel) 80%, transparent);
+                 border: 1px solid var(--border); color: var(--dim); border-radius: 8px;
+                 padding: 3px 9px; font-size: 13px; cursor: pointer; }
+  .chartexpand:hover { color: var(--text); border-color: var(--accent); }
+  .action { margin-top: 12px; border-radius: 14px; padding: 13px 16px; font-size: 13px;
+            border: 1px solid var(--border); background: var(--panel); box-shadow: var(--shadow); }
+  .action.go { border-color: var(--bd-green); background: var(--tint-green); }
+  .action.wait { border-color: var(--bd-blue); background: var(--tint-blue); }
+  .action.avoid { border-color: var(--bd-red); background: var(--tint-red); }
+  .action b:first-child { display: block; margin-bottom: 4px; font-size: 13.5px; }
+  .levels { display: grid; grid-template-columns: repeat(auto-fit, minmax(115px, 1fr));
+            gap: 10px; margin-top: 12px; }
+  .lvl { background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+         padding: 10px 14px; box-shadow: var(--shadow); }
+  .lvl .k { font-size: 11px; color: var(--faint); cursor: help; }
+  .lvl .v { font-size: 15.5px; font-weight: 650; margin-top: 2px; }
+  .lvl .s { font-size: 11px; color: var(--dim); }
+  ul.reasons { margin: 6px 0; padding-left: 20px; }
+  ul.reasons li { margin: 4px 0; }
+  .fundgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+              gap: 9px; }
+  .fund { background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+          padding: 9px 12px; font-size: 12px; color: var(--dim); box-shadow: var(--shadow); }
+  .fund b { color: var(--text); font-size: 14px; font-weight: 650; }
+  .bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: 6px; }
+  .bar i { display: block; height: 4px; border-radius: 2px; background: var(--grad); }
+  .newsitem { background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+              padding: 10px 14px; margin: 7px 0; box-shadow: var(--shadow); }
+  .newsitem a { color: var(--text); text-decoration: none; font-weight: 600; font-size: 13px; }
+  .newsitem a:hover { color: var(--blue); }
+  .newsitem .meta { color: var(--faint); font-size: 11px; margin-top: 2px; }
+  .newsitem .sum { color: var(--dim); font-size: 12px; margin-top: 4px; }
+  .patcard { background: var(--panel); border: 1px solid var(--border);
+             border-radius: 14px; padding: 10px 14px; margin: 7px 0; box-shadow: var(--shadow); }
+  .trendbadge { display: inline-block; padding: 2px 10px; border-radius: 10px;
+                font-size: 12px; margin-left: 6px; font-weight: 600; }
+  .trendbadge.up { background: var(--green-bg); color: var(--green); }
+  .trendbadge.down { background: var(--red-bg); color: var(--red); }
+  .trendbadge.side { background: var(--amber-bg); color: var(--amber); }
+
+  /* ---------- regime banner ---------- */
+  .regime { padding: 11px 16px; margin: 10px 12px 4px; border-radius: 14px;
+            font-size: 12.5px; border: 1px solid var(--border); box-shadow: var(--shadow); }
+  .regime.up { background: var(--tint-green); border-color: var(--bd-green); }
+  .regime.side { background: var(--tint-amber); border-color: var(--bd-amber); }
+  .regime.down { background: var(--tint-red); border-color: var(--bd-red); }
+
+  /* ---------- buttons / forms ---------- */
+  .btn { background: var(--btn-bg); color: var(--accent-text); border: none; border-radius: 9px;
+         padding: 8px 16px; font-size: 13px; cursor: pointer; font-weight: 600;
+         transition: .15s; }
+  .btn:hover { filter: brightness(1.12); }
+  .btn.ghost { background: var(--panel); color: var(--dim); border: 1px solid var(--border); }
+  .btn.ghost:hover { color: var(--text); }
+  .btn.sm { padding: 4px 10px; font-size: 11.5px; }
+  label input { display: block; width: 100%; margin-top: 3px; background: var(--bg);
+                color: var(--text); border: 1px solid var(--border); border-radius: 8px;
+                padding: 7px 9px; font-size: 13px; }
+  .section-head { display: flex; align-items: baseline; gap: 12px; padding: 12px 12px 2px; }
+  .section-head h3 { margin: 0; }
+  .empty { color: var(--dim); padding: 44px; text-align: center; }
+  footer { padding: 10px 20px; color: var(--faint); font-size: 11px;
+           border-top: 1px solid var(--border); }
+
+  /* ---------- help modal ---------- */
+  #helpmodal { position: fixed; inset: 0; background: #0007; z-index: 100;
+               display: none; place-items: center; }
+  #helpmodal .box { background: var(--panel2); border: 1px solid var(--border);
+                    border-radius: 16px; max-width: 640px; width: 92%;
+                    max-height: 84vh; overflow-y: auto; padding: 24px 28px;
+                    box-shadow: 0 24px 60px rgba(0,0,0,.35); }
+  #helpmodal h2 { margin-top: 0; }
+  #helpmodal ol { padding-left: 22px; } #helpmodal li { margin: 10px 0; }
+  #helpmodal .gloss { display: grid; grid-template-columns: 120px 1fr; gap: 6px 14px;
+                      font-size: 12.5px; margin-top: 8px; }
+  #helpmodal .gloss b { color: var(--blue); font-weight: 600; }
+
+  @media (max-width: 900px) {
+    main { grid-template-columns: 1fr; height: auto; }
+    #list { max-height: 55vh; border-right: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><div class="logo">SC</div>
+    <h1>Shaikh Capital<small>trade smart</small></h1></div>
+  <div class="tabs" id="tabs"></div>
+  <div class="search">
+    <input id="q" placeholder="🔍 Look up any stock…" autocomplete="off"
+           oninput="onSearch()" onkeydown="if(event.key==='Escape') clearSearch()">
+    <div id="sr"></div>
+  </div>
+  <div class="hgroup">
+    <button class="hbtn" id="themebtn" onclick="toggleTheme()" title="Switch light/dark mode">🌙</button>
+    <button class="hbtn" onclick="el('helpmodal').style.display='grid'">❓ How it works</button>
+  </div>
+</header>
+
+<div id="overview"></div>
+
+<main>
+  <div id="list"></div>
+  <div id="detail"><div class="empty">Pick a stock from the list — or search for any stock above.</div></div>
+</main>
+
+<footer>Shaikh Capital is an analysis tool, not investment advice. Every trade can lose money —
+the safety stop limits how much. Data: Yahoo Finance (free, may lag). Settings in config.json.</footer>
+
+<div id="helpmodal" onclick="if(event.target===this) this.style.display='none'">
+  <div class="box">
+    <h2>How Shaikh Capital works</h2>
+    <ol>
+      <li><b>Every morning at 07:30</b> Shaikh Capital automatically checks ~1,300 stocks across the
+        US 🇺🇸, Germany 🇩🇪 and India 🇮🇳.</li>
+      <li>It hunts for <b>chart patterns</b> that often come before a price rise, checks the
+        stock's <b>trend and momentum</b>, and rates the <b>quality of the company</b>
+        (growth, profits, debt, dividends).</li>
+      <li>The best candidates show up as a ranked list of <b>setups</b>.
+        <span class="grade A" style="vertical-align:middle">A</span> = strongest.
+        Click one to see everything about it.</li>
+      <li>Each setup gives you a complete plan of three prices:
+        <b>Buy above</b> (only buy if the price rises past this),
+        <b>Safety stop</b> (sell here if it drops — this caps your loss at roughly 1% of
+        your capital with the suggested share count), and
+        <b>Target</b> (where to take your profit).</li>
+      <li>The colored banner shows <b>overall market health</b>. 🔴 Red means the whole
+        market is falling — even good-looking stocks fail often then. Best to wait.</li>
+      <li>Took a trade? Press <b>Log this trade</b> and enter the exact price you paid.
+        Shaikh Capital then watches it hourly and pops up a notification when your stop or
+        target is hit. The 📒 Journal tab shows how you're really doing over time.</li>
+    </ol>
+    <h3>Words you'll see</h3>
+    <div class="gloss">
+      <b>Setup</b><span>a stock that looks ready for a possible move up, with a plan attached</span>
+      <b>Breakout</b><span>price rising past the "buy above" level — the signal to act</span>
+      <b>Watching</b><span>pattern is complete, but the breakout hasn't happened yet</span>
+      <b>Safety stop</b><span>your exit if the trade goes wrong; never move it down</span>
+      <b>Reward : Risk</b><span>how much you stand to win vs. lose; 1:2 means winning pays double the risk</span>
+      <b>RSI</b><span>momentum meter 0–100; over ~70 = maybe overheated, under ~30 = beaten down</span>
+      <b>⚠E</b><span>company reports earnings within a week — prices can jump past your stop; be careful</span>
+    </div>
+    <div style="margin-top:18px"><button class="btn" onclick="el('helpmodal').style.display='none'">Got it</button></div>
+  </div>
+</div>
+
+<script>
+const MARKETS = { us: "🇺🇸 US", de: "🇩🇪 Germany", in: "🇮🇳 India",
+                  comeback: "💎 Comeback", journal: "📒 Journal" };
+const FLAG = { us: "🇺🇸", de: "🇩🇪", in: "🇮🇳" };
+const REGIME_ICON = { healthy: "🟢", caution: "🟡", downtrend: "🔴", unknown: "⚪", off: "⚪" };
+let current = "us", scanData = null, chart = null, sel = null, lastChartCtx = null;
+
+const fmt = (v, d=2) => v == null ? "—" : Number(v).toLocaleString("en-US", {maximumFractionDigits: d});
+const el = id => document.getElementById(id);
+const statusLabel = s => s === "forming" ? "watching" : "breakout";
+
+/* ---------- theme ---------- */
+function themeIcon() {
+  el("themebtn").textContent = document.documentElement.dataset.theme === "dark" ? "☀️" : "🌙";
+}
+function toggleTheme() {
+  const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = next;
+  localStorage.setItem("sc-theme", next);
+  themeIcon();
+  if (lastChartCtx) drawChart(lastChartCtx);  // redraw chart in new colors
+}
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+function tabs() {
+  el("tabs").innerHTML = Object.entries(MARKETS).map(([k, label]) =>
+    `<button class="tab ${k===current?'active':''}" onclick="switchMarket('${k}')">${label}</button>`).join("");
+}
+async function switchMarket(m) {
+  current = m; tabs();
+  wideMode = false;  // exit full-screen chart on navigation
+  if (m === "journal") await loadJournal(); else await loadScan();
+}
+
+/* ---------- overview strip ---------- */
+async function loadOverview() {
+  try {
+    const d = await (await fetch("/api/scans")).json();
+    el("overview").innerHTML = Object.entries(d).map(([m, s]) => `
+      <div class="ov" onclick="switchMarket('${m}')">
+        <div class="mkt">${FLAG[m]} ${MARKETS[m].split(" ").slice(1).join(" ")}
+          <span class="chip ${s.regime}">${REGIME_ICON[s.regime] ?? ""} ${s.regime}</span></div>
+        <div class="nums">
+          <span><b>${s.setups}</b> setups</span>
+          <span><b>${s.a_grades}</b> A-grade</span>
+          <span><b>${s.warnings}</b> warnings</span>
+        </div>
+        ${s.top ? `<div class="top">Top pick: <b>${s.top.ticker}</b>
+          ${s.top.pattern.replaceAll("_"," ")} · score ${fmt(s.top.score,0)}</div>` : ""}
+      </div>`).join("");
+  } catch (e) { /* overview is optional */ }
+}
+
+/* ---------- scan list ---------- */
+async function loadScan() {
+  el("list").innerHTML = `<div class="empty">Loading ${MARKETS[current]}…</div>`;
+  let r;
+  try {
+    r = await fetch(`/api/scan/${current}`);
+  } catch (e) {
+    el("list").innerHTML = `<div class="empty">Connection hiccup — the Mac may be asleep
+      or the network dropped.<br><br>
+      <button class="btn" onclick="loadScan()">Try again</button></div>`;
+    return;
+  }
+  if (r.status === 401) { location.href = "/login"; return; }  // session expired
+  if (!r.ok) {
+    scanData = null;
+    el("list").innerHTML = `<div class="empty">No scan for ${MARKETS[current]} yet.<br>
+      Run <code>SCAN.command</code> first.</div>`;
+    return;
+  }
+  scanData = await r.json();
+  renderList();
+  if (scanData.setups.length) select(0);
+  else el("detail").innerHTML = `<div class="empty">No qualifying setups today. That's normal —
+    some days the market simply offers nothing worth buying.</div>`;
+}
+
+function regimeBanner() {
+  const r = scanData.regime;
+  if (!r || r.status === "off" || r.status === "unknown") return "";
+  const cls = r.status === "healthy" ? "up" : r.status === "caution" ? "side" : "down";
+  return `<div class="regime ${cls}">${REGIME_ICON[r.status]} <b>Market health: ${r.status}</b>
+    — ${r.note} <span class="faint" style="font-size:11px">(index ${fmt(r.index_close)} ·
+    ${fmt(r.vs_sma200_pct,1)}% vs its 200-day average)</span></div>`;
+}
+
+function renderList() {
+  const rows = scanData.setups.map((s, i) => `
+    <tr class="row" id="r${i}" onclick="select(${i})">
+      <td><span class="grade ${s.grade}">${s.grade}</span></td>
+      <td><div class="tick">${s.market ? (FLAG[s.market] ?? "") + " " : ""}${s.ticker}${s.earnings_soon ? ' <span class="ewarn" title="earnings in '+s.earnings_in_days+' day(s) — gap risk">⚠E</span>' : ''}</div>
+          <div class="dim" style="font-size:11px">${s.name}</div></td>
+      <td>${s.pattern.replaceAll("_"," ")}<br><span class="status ${s.status}">${statusLabel(s.status)}</span></td>
+      <td class="dim">${fmt(s.close)}</td>
+      <td>${fmt(s.entry)}</td>
+      <td class="neg">${fmt(s.stop)}</td>
+      <td class="pos">${fmt(s.target)}</td>
+      <td>1:${fmt(s.risk_reward,1)}</td>
+      <td><b>${fmt(s.composite_score,0)}</b></td>
+    </tr>`).join("");
+  const warns = scanData.warnings.length ? `
+    <div class="section-head"><h3>⚠ Bearish warnings (${scanData.warnings.length})</h3>
+      <span class="faint" style="font-size:11px">charts that look like they may fall — don't buy; review if you own them</span></div>
+    <table><tbody>
+      ${scanData.warnings.map(w => `<tr><td class="tick">${w.ticker}</td>
+        <td class="dim">${w.name}</td><td>${w.pattern.replaceAll("_"," ")}</td>
+        <td><span class="status ${w.status}">${statusLabel(w.status)}</span></td>
+        <td class="faint" style="font-size:11px">${w.note}</td></tr>`).join("")}
+    </tbody></table>` : "";
+  el("list").innerHTML = `
+    ${regimeBanner()}
+    <table><thead><tr>
+      <th title="A = strongest setups"></th><th>Stock</th><th>Pattern</th>
+      <th title="latest closing price">Price</th>
+      <th title="only buy if price rises past this">Buy above</th>
+      <th title="sell here if it drops — caps your loss">Stop</th>
+      <th title="where to take profit">Target</th>
+      <th title="potential reward vs. risk">R:R</th><th>Score</th>
+    </tr></thead><tbody>${rows}</tbody></table>
+    ${scanData.setups.length ? "" : `<div class="empty">No qualifying setups.</div>`}
+    ${warns}`;
+}
+
+/* ---------- setup detail ---------- */
+function actionBox(s) {
+  const regime = scanData?.regime?.status;
+  if (regime === "downtrend")
+    return `<div class="action avoid"><b>🔴 Best to wait</b>
+      The overall ${MARKETS[current]} market is falling right now. Even strong-looking stocks
+      fail more often in a weak market. Keep this on your watchlist — don't buy yet.</div>`;
+  let extra = "";
+  if (s.earnings_soon) extra = ` <b style="color:var(--amber)">Careful:</b> earnings in
+    ${s.earnings_in_days} day(s) — prices can gap past your stop overnight. Consider skipping
+    this one or using half size.`;
+  if (s.status === "forming")
+    return `<div class="action wait"><b>👀 Nothing to do yet — watch</b>
+      The pattern is ready, but the price (${fmt(s.close)}) hasn't broken out yet.
+      The trade only starts <b>if the price rises above ${fmt(s.entry)} ${s.currency}</b>.
+      You can place a "buy stop" order at ${fmt(s.entry)} with your broker, or check back after
+      the close. If it triggers: safety stop at ${fmt(s.stop)}, take profit near ${fmt(s.target)},
+      suggested ${fmt(s.position.shares,0)} shares.${extra}</div>`;
+  return `<div class="action go"><b>🚀 Breakout happened</b>
+    The price just broke above ${fmt(s.entry)} ${s.currency}. If you take it:
+    buy ~${fmt(s.position.shares,0)} shares (≈ €${fmt(s.position.cost_eur,0)}), set your
+    safety stop at ${fmt(s.stop)} immediately, and plan to take profit near ${fmt(s.target)}.
+    Your maximum planned loss is about €${fmt(s.position.risk_eur,0)}.${extra}</div>`;
+}
+
+async function select(i) {
+  sel = i;
+  document.querySelectorAll("tr.row").forEach(r => r.classList.remove("sel"));
+  const rowEl = el("r"+i); if (rowEl) rowEl.classList.add("sel");
+  const s = scanData.setups[i];
+  el("detail").innerHTML = `
+    <h2>${s.ticker} <span class="dim" style="font-weight:400">${s.name}</span>
+      <span class="grade ${s.grade}" style="margin-left:6px">${s.grade}</span></h2>
+    <div class="dim">${s.market_index} · ${s.sector ?? ""} · ${s.pattern.replaceAll("_"," ")}
+      <span class="status ${s.status}">${statusLabel(s.status)}</span>
+      ${s.conflicting_bearish ? '<span style="color:var(--amber)"> ⚠ a bearish pattern is also present</span>':''}
+      ${s.earnings_date ? `<span style="color:${s.earnings_soon?'var(--amber)':'var(--faint)'}"> · earnings ${s.earnings_date}${s.earnings_in_days!=null?` (in ${s.earnings_in_days}d)`:''}</span>` : ''}</div>
+    ${actionBox(s)}
+    <div id="chart"></div>
+    <div class="levels">
+      <div class="lvl"><div class="k" title="only buy if price rises past this level">Buy above</div>
+        <div class="v">${fmt(s.entry)}</div><div class="s">${s.currency}</div></div>
+      <div class="lvl"><div class="k" title="your exit if the trade goes wrong — caps the loss">Safety stop</div>
+        <div class="v neg">${fmt(s.stop)}</div><div class="s">−${fmt(s.risk_pct,1)}% from entry</div></div>
+      <div class="lvl"><div class="k" title="where to take your profit">Target</div>
+        <div class="v pos">${fmt(s.target)}</div><div class="s">+${fmt(s.upside_pct,1)}%</div></div>
+      <div class="lvl"><div class="k" title="potential win vs. potential loss">Reward : Risk</div>
+        <div class="v">1 : ${fmt(s.risk_reward,1)}</div></div>
+      <div class="lvl"><div class="k" title="sized so one loss ≈ 1% of your capital">Suggested size</div>
+        <div class="v">${fmt(s.position.shares,0)} sh</div>
+        <div class="s">≈ €${fmt(s.position.cost_eur,0)} · max loss €${fmt(s.position.risk_eur,0)}</div></div>
+    </div>
+    <h3>Why the system likes it</h3>
+    <ul class="reasons">${s.reasons.map(r => `<li>${r}</li>`).join("")}</ul>
+    <h3>Scores</h3>
+    <div class="fundgrid">
+      ${[["Technical (chart)", s.technical_score],["Pattern quality", s.pattern_score],
+         ["Company quality", s.fundamental_score],["Overall", s.composite_score]]
+        .map(([k,v]) => `<div class="fund">${k}<div><b>${fmt(v,0)}</b><span class="faint"> /100</span></div>
+          <div class="bar"><i style="width:${v??0}%"></i></div></div>`).join("")}
+    </div>
+    ${s.fundamental_components?.length ? `<h3>Company detail</h3>
+    <div class="fundgrid">${s.fundamental_components.map(c => `
+      <div class="fund">${c.label}<div><b>${c.value==null?"—":
+        (Math.abs(c.value)<5 ? (c.value*100).toFixed(1)+"%" : fmt(c.value,1))}</b></div>
+      <div class="bar"><i style="width:${c.score??0}%"></i></div></div>`).join("")}</div>`:""}
+    ${dividendBlock(s.dividend, s.currency)}
+    <h3>Latest news</h3><div id="news"><div class="faint">Loading headlines…</div></div>
+    <div class="faint" style="margin-top:14px;font-size:11px">3-month strength vs index:
+      ${fmt(s.rs_vs_index_3m,1)} pts · RSI ${fmt(s.rsi14,0)} ·
+      ${fmt(s.pct_off_52w_high,1)}% off 52-week high ·
+      avg daily volume ${fmt(s.avg_dollar_vol/1e6,1)}M ${s.currency}</div>
+    <h3>Journal</h3>
+    <div id="logform"><button class="btn" onclick="showLogForm()">✍️ Log this trade</button></div>`;
+  drawChart(s);
+  loadNews(s.ticker);
+}
+
+function dividendBlock(d, currency) {
+  if (!d) return `<h3>Dividends</h3><div class="dim">This stock pays no dividend.</div>`;
+  const maxAmt = Math.max(...d.yearly.map(y => y.amount), 0.0001);
+  return `<h3>Dividends</h3>
+    <div class="fundgrid">
+      <div class="fund"><span title="cash paid out over the last 12 months, as % of today's price">Dividend yield</span>
+        <div><b>${fmt(d.yield_pct,2)}%</b><span class="faint"> per year</span></div></div>
+      <div class="fund"><span title="total cash per share paid in the last 12 months">Last 12 months</span>
+        <div><b>${fmt(d.ttm)}</b><span class="faint"> ${currency}/share</span></div></div>
+    </div>
+    <div class="fundgrid" style="margin-top:9px">
+      ${d.yearly.map(y => `<div class="fund">${y.year}
+        <div><b>${fmt(y.amount)}</b><span class="faint"> ${currency}</span></div>
+        <div class="bar"><i style="width:${Math.round(y.amount/maxAmt*100)}%"></i></div>
+      </div>`).join("")}
+    </div>
+    <div class="faint" style="font-size:11px;margin-top:6px">Yearly totals — multiple payouts
+      in a year are added together.</div>`;
+}
+
+async function loadNews(ticker) {
+  try {
+    const d = await (await fetch(`/api/news/${encodeURIComponent(ticker)}`)).json();
+    const box = el("news");
+    if (!box) return;
+    box.innerHTML = d.news.length ? d.news.map(n => `
+      <div class="newsitem">
+        <a href="${n.url}" target="_blank" rel="noopener">${n.title}</a>
+        <div class="meta">${n.source} · ${n.published} UTC</div>
+        ${n.summary ? `<div class="sum">${n.summary}…</div>` : ""}
+      </div>`).join("")
+      : `<div class="faint">No recent headlines found for this stock.</div>`;
+  } catch (e) { const box = el("news"); if (box) box.innerHTML = ""; }
+}
+
+async function showLogForm() {
+  const s = scanData.setups[sel];
+  // Pre-fill with a REALISTIC fill. For an already-broken-out stock that is the
+  // LIVE latest price fetched from the server right now (never a stale page
+  // snapshot or the lower breakout level) — otherwise the journal starts with
+  // phantom profit and skews your real statistics.
+  let suggestedFill = s.status === "triggered" ? s.close : s.entry;
+  let priceDate = "";
+  if (s.status === "triggered") {
+    try {
+      const p = await (await fetch(`/api/price/${encodeURIComponent(s.ticker)}`)).json();
+      suggestedFill = p.price; priceDate = p.date;
+    } catch (e) { /* fall back to scan close */ }
+  }
+  const fillHint = s.status === "triggered"
+    ? `Pre-filled with the latest known price (${fmt(suggestedFill)}${priceDate ? ", " + priceDate : ""})
+       — the breakout already happened, so buying now costs this, not the breakout level.
+       Replace with your exact fill from your broker.`
+    : `Pre-filled with the breakout level — right for a "buy stop" order. If you bought at a
+       different price, enter your exact fill from your broker.`;
+  el("logform").innerHTML = `
+    <div class="fund" style="max-width:540px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <label class="dim">Fill price<input id="f_price" type="number" step="any" value="${suggestedFill}"></label>
+        <label class="dim">Shares<input id="f_shares" type="number" step="any" value="${s.position.shares}"></label>
+        <label class="dim">Date<input id="f_date" type="date" value="${new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10)}"></label>
+      </div>
+      <div class="faint" style="font-size:11px;margin-top:6px">${fillHint}</div>
+      <label class="dim" style="display:block;margin-top:8px">Notes
+        <input id="f_notes" type="text" placeholder="optional" style="width:100%"></label>
+      <div style="margin-top:10px;display:flex;gap:8px">
+        <button class="btn" onclick="submitLog()">Save to journal</button>
+        <button class="btn ghost" onclick="select(sel)">Cancel</button>
+      </div>
+      <div class="dim" id="f_msg" style="margin-top:6px;font-size:11px"></div>
+    </div>`;
+}
+
+async function submitLog() {
+  const s = scanData.setups[sel];
+  const body = {
+    ticker: s.ticker, name: s.name, market: s.market ?? current, currency: s.currency,
+    pattern: s.pattern, grade: s.grade,
+    entry_price: parseFloat(el("f_price").value),
+    shares: parseFloat(el("f_shares").value),
+    stop: s.stop, target: s.target,
+    entry_date: el("f_date").value, notes: el("f_notes").value,
+  };
+  const r = await fetch("/api/journal", { method: "POST",
+    headers: {"Content-Type": "application/json"}, body: JSON.stringify(body) });
+  el("f_msg").textContent = r.ok ? "Saved ✓ — see the Journal tab." : "Error: " + (await r.text());
+  if (r.ok) setTimeout(() => select(sel), 900);
+}
+
+/* ---------- chart ---------- */
+let wideMode = false;   // true = chart covers the whole screen (TradingView-style)
+let chartDays = 260;    // visible history: 126=6M, 260=1Y, 520=2Y, 0=everything
+function toggleWide() {
+  wideMode = !wideMode;
+  if (lastChartCtx) drawChart(lastChartCtx);
+}
+function setRange(days) {
+  chartDays = days;
+  if (lastChartCtx) drawChart(lastChartCtx);
+}
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && wideMode) toggleWide();
+});
+
+async function drawChart(s) {
+  lastChartCtx = s;
+  const r = await fetch(`/api/chart/${encodeURIComponent(s.ticker)}?days=${chartDays}`);
+  if (!r.ok) return;
+  const d = await r.json();
+  const box = el("chart"); if (!box) return;
+  if (chart) { try { chart.remove(); } catch (e) {} chart = null; }  // destroy old engine — prevents slowdown
+  box.innerHTML = "";
+  box.classList.toggle("fs", wideMode);
+  chart = LightweightCharts.createChart(box, {
+    layout: { background: { color: cssVar("--panel") }, textColor: cssVar("--dim") },
+    grid: { vertLines: { color: cssVar("--chart-grid") }, horzLines: { color: cssVar("--chart-grid") } },
+    rightPriceScale: { borderColor: cssVar("--border") },
+    timeScale: { borderColor: cssVar("--border") },
+    watermark: {
+      visible: true,
+      text: s.name ? `${s.ticker} · ${s.name}` : s.ticker,
+      fontSize: wideMode ? 52 : 32,
+      color: cssVar("--text") + "14",
+      horzAlign: "center", vertAlign: "center",
+    },
+    autoSize: true,
+  });
+  const candles = chart.addCandlestickSeries({
+    upColor: cssVar("--green"), downColor: cssVar("--red"), borderVisible: false,
+    wickUpColor: cssVar("--green"), wickDownColor: cssVar("--red"),
+  });
+  candles.setData(d.bars);
+  chart.addLineSeries({ color: cssVar("--amber"), lineWidth: 1, priceLineVisible: false,
+    lastValueVisible: false }).setData(d.sma50);
+  chart.addLineSeries({ color: "#8957e5", lineWidth: 1, priceLineVisible: false,
+    lastValueVisible: false }).setData(d.sma200);
+  for (const [price, color, title] of [[s.entry, cssVar("--blue"), "buy above"],
+      [s.stop, cssVar("--red"), "stop"], [s.target, cssVar("--green"), "target"]]) {
+    if (price != null) candles.createPriceLine({ price, color, lineWidth: 1,
+      lineStyle: LightweightCharts.LineStyle.Dashed, title });
+  }
+  const hasPattern = drawPattern(d, s);
+  chart.timeScale().fitContent();
+  // legend, range selector and fullscreen control overlaid on the chart
+  const ranges = [[126, "6M"], [260, "1Y"], [520, "2Y"], [1260, "5Y"], [2520, "10Y"], [0, "All"]];
+  box.insertAdjacentHTML("beforeend", `
+    <div class="chartlegend">
+      <span><i style="background:${cssVar("--amber")}"></i>50-day average</span>
+      <span><i style="background:#8957e5"></i>200-day average</span>
+      ${hasPattern ? `<span><i style="background:${cssVar("--text")}"></i>detected pattern</span>` : ""}
+    </div>
+    <div class="chartranges">
+      ${ranges.map(([n, label]) =>
+        `<button class="${chartDays === n ? "on" : ""}" onclick="setRange(${n})">${label}</button>`).join("")}
+    </div>
+    <button class="chartexpand" onclick="toggleWide()"
+      title="${wideMode ? "Exit full screen (Esc)" : "Full-screen chart"}">${wideMode ? "🗗" : "⛶"}</button>`);
+}
+
+/* Draw the detected pattern's own geometry on the chart (marked-up-chart style). */
+function drawPattern(d, s) {
+  const kps = (s.key_points || []).filter(k => typeof k[0] === "string" && k[0].includes("-"));
+  if (!kps.length || !d.bars.length) return false;
+  const firstTime = d.bars[0].time, lastTime = d.bars[d.bars.length - 1].time;
+  const pts = kps.filter(k => k[0] >= firstTime && k[0] <= lastTime)
+                 .map(k => ({ time: k[0], value: k[1] }))
+                 .sort((a, b) => a.time < b.time ? -1 : 1)
+                 .filter((p, i, arr) => i === 0 || p.time !== arr[i - 1].time);
+  if (!pts.length) return false;
+  // "analyst markup" ink: theme text color, clearly distinct from indicator lines
+  const color = cssVar("--text");
+  const seg = data => chart.addLineSeries({
+    color, lineWidth: 2, priceLineVisible: false, lastValueVisible: false,
+    crosshairMarkerVisible: false,
+  }).setData(data);
+  if (s.pattern === "darvas_box" && pts.length >= 2) {
+    // box top and box bottom as horizontal walls up to today
+    const top = pts.reduce((a, b) => a.value > b.value ? a : b);
+    const bot = pts.reduce((a, b) => a.value < b.value ? a : b);
+    seg([{ time: top.time, value: top.value }, { time: lastTime, value: top.value }]);
+    seg([{ time: bot.time, value: bot.value }, { time: lastTime, value: bot.value }]);
+  } else if (s.pattern === "ascending_triangle" && s.entry) {
+    // flat resistance through the touch points + rising trendline through the lows
+    const resistance = s.entry / 1.002;
+    const touches = pts.filter(p => Math.abs(p.value - resistance) / resistance < 0.035);
+    const lows = pts.filter(p => !touches.includes(p));
+    if (touches.length) seg([{ time: touches[0].time, value: resistance },
+                             { time: lastTime, value: resistance }]);
+    if (lows.length >= 2) seg(lows);
+  } else if (pts.length >= 2) {
+    // generic: connect the pattern's anchor points (pole+flag, cup, H&S, double bottom)
+    seg(pts);
+  }
+  return true;
+}
+
+/* ---------- journal ---------- */
+async function loadJournal() {
+  el("detail").innerHTML = `<div class="empty">Your trading log and real performance stats.</div>`;
+  let r, ra;
+  try {
+    [r, ra] = await Promise.all([fetch("/api/journal"), fetch("/api/alerts")]);
+  } catch (e) {
+    el("list").innerHTML = `<div class="empty">Connection hiccup —
+      <button class="btn" onclick="loadJournal()">Try again</button></div>`;
+    return;
+  }
+  if (r.status === 401) { location.href = "/login"; return; }
+  const d = await r.json();
+  const alertData = ra.ok ? await ra.json() : { alerts: [] };
+  renderAlerts(alertData.alerts);
+  const st = d.stats;
+  const ccy = obj => Object.entries(obj).map(([c,v]) => `${fmt(v,0)} ${c}`).join(" · ") || "—";
+  const statCards = `
+    <div class="fundgrid" style="padding:12px">
+      ${[["Open positions", st.open_count], ["Money at risk now", ccy(st.open_risk_by_currency)],
+         ["Closed trades", st.closed_count], ["Win rate", st.win_rate==null?"—":fmt(st.win_rate,1)+"%"],
+         ["Avg R", st.avg_r==null?"—":fmt(st.avg_r,2)], ["Total R", st.total_r==null?"—":fmt(st.total_r,2)],
+         ["Realized profit/loss", ccy(st.realized_pnl_by_currency)]]
+        .map(([k,v]) => `<div class="fund">${k}<div><b>${v}</b></div></div>`).join("")}
+    </div>`;
+  const openRows = d.open.map(t => `
+    <tr>
+      <td class="tick">${t.ticker}<div class="faint" style="font-size:11px">${t.pattern.replaceAll("_"," ")}</div></td>
+      <td class="dim">${t.entry_date}</td>
+      <td>${fmt(t.entry_price)}</td>
+      <td>${fmt(t.shares,0)}</td>
+      <td class="neg">${fmt(t.stop)}</td>
+      <td>${fmt(t.last_price)}</td>
+      <td class="${(t.pnl??0) >= 0 ? "pos":"neg"}">${fmt(t.pnl)} ${t.currency}<div class="faint" style="font-size:11px">${fmt(t.pnl_pct,1)}% ${t.r==null?"":"· "+t.r+"R"}</div></td>
+      <td>
+        <button class="btn sm" onclick="closeTrade(${t.id}, ${t.last_price ?? t.entry_price})">Close</button>
+        <button class="btn sm ghost" onclick="moveStop(${t.id}, ${t.stop})">Stop</button>
+        <button class="btn sm ghost" onclick="delTrade(${t.id})">✕</button>
+      </td>
+    </tr>`).join("");
+  const closedRows = d.closed.map(t => `
+    <tr>
+      <td class="tick">${t.ticker}<div class="faint" style="font-size:11px">${t.pattern.replaceAll("_"," ")}</div></td>
+      <td class="dim">${t.entry_date} → ${t.exit_date}</td>
+      <td>${fmt(t.entry_price)} → ${fmt(t.exit_price)}</td>
+      <td>${fmt(t.shares,0)}</td>
+      <td class="${t.pnl >= 0 ? "pos":"neg"}">${fmt(t.pnl)} ${t.currency}</td>
+      <td class="${(t.r??0) >= 0 ? "pos":"neg"}">${t.r==null?"—":fmt(t.r,2)+"R"}</td>
+      <td class="faint">${t.exit_reason ?? ""} ${t.notes ? "· "+t.notes : ""}</td>
+    </tr>`).join("");
+  el("list").innerHTML = `
+    ${statCards}
+    <div class="section-head"><h3>Open positions (${d.open.length})</h3></div>
+    <table><thead><tr><th>Stock</th><th>Entered</th><th>Fill</th><th>Sh</th><th>Stop</th>
+      <th>Now</th><th>P&L</th><th></th></tr></thead>
+      <tbody>${openRows || `<tr><td colspan="8" class="dim">No open positions — log one from any setup.</td></tr>`}</tbody></table>
+    <div class="section-head"><h3>Closed trades (${d.closed.length})</h3></div>
+    <table><thead><tr><th>Stock</th><th>Dates</th><th>Entry → Exit</th><th>Sh</th>
+      <th>P&L</th><th>R</th><th>Exit / notes</th></tr></thead>
+      <tbody>${closedRows || `<tr><td colspan="7" class="dim">No closed trades yet.</td></tr>`}</tbody></table>`;
+}
+
+function renderAlerts(alerts) {
+  if (!alerts.length) return;
+  const icon = { stop: "🔴", target: "🟢", entry: "🔵" };
+  el("detail").innerHTML = `
+    <h3 style="margin-top:4px">Recent alerts</h3>
+    ${alerts.slice(0, 25).map(a => `
+      <div class="patcard" style="padding:9px 13px">
+        <span>${icon[a.kind] ?? "•"}</span>
+        <b>${a.ticker}</b> <span class="faint" style="font-size:11px">${a.time.replace("T"," ")}</span>
+        <div class="dim" style="font-size:12px">${a.message} — price was ${fmt(a.price)}</div>
+      </div>`).join("")}
+    <div class="faint" style="font-size:11px;margin-top:8px">The monitor checks hourly on
+      weekdays (09:00–22:00) and also sends macOS notifications.</div>`;
+}
+
+async function closeTrade(id, suggested) {
+  const px = prompt("Exit price:", suggested);
+  if (px == null || px === "") return;
+  const reason = prompt("Reason (target / stop / manual):", "manual") || "manual";
+  await fetch(`/api/journal/${id}/close`, { method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ exit_price: parseFloat(px), exit_reason: reason }) });
+  loadJournal();
+}
+async function moveStop(id, cur) {
+  const px = prompt("New stop-loss:", cur);
+  if (px == null || px === "") return;
+  await fetch(`/api/journal/${id}/stop`, { method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ stop: parseFloat(px) }) });
+  loadJournal();
+}
+async function delTrade(id) {
+  if (!confirm("Delete this journal entry? (Use Close for a normal exit.)")) return;
+  await fetch(`/api/journal/${id}`, { method: "DELETE" });
+  loadJournal();
+}
+
+/* ---------- stock search & on-demand analysis ---------- */
+let searchTimer = null;
+function clearSearch() { el("sr").style.display = "none"; el("q").value = ""; }
+
+function onSearch() {
+  clearTimeout(searchTimer);
+  const q = el("q").value.trim();
+  if (q.length < 1) { el("sr").style.display = "none"; return; }
+  searchTimer = setTimeout(async () => {
+    const r = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+    const d = await r.json();
+    el("sr").innerHTML = d.results.length ? d.results.map(x => `
+      <div class="item" onclick="pickStock('${x.ticker.replace(/'/g,"\\'")}')">
+        <span>${FLAG[x.market] ?? ""}</span><span class="t">${x.ticker}</span>
+        <span class="n">${x.name}</span><span class="x">${x.index}</span>
+      </div>`).join("")
+      : `<div class="item"><span class="n">No matches for “${q}”.</span></div>`;
+    el("sr").style.display = "block";
+  }, 250);
+}
+
+async function pickStock(ticker) {
+  el("sr").style.display = "none";
+  el("q").value = ticker;
+  el("detail").innerHTML = `<div class="empty">Analyzing ${ticker}…<br>
+    <span style="font-size:12px">fetching prices, patterns, company data and news — a few seconds for new stocks</span></div>`;
+  let r;
+  try {
+    r = await fetch(`/api/analyze/${encodeURIComponent(ticker)}`);
+  } catch (e) {
+    el("detail").innerHTML = `<div class="empty">Connection hiccup —
+      <button class="btn" onclick="pickStock('${ticker.replace(/'/g,"\\'")}')">Try again</button></div>`;
+    return;
+  }
+  if (r.status === 401) { location.href = "/login"; return; }
+  if (!r.ok) {
+    el("detail").innerHTML = `<div class="empty">Could not analyze ${ticker}: ${(await r.text()).slice(0,300)}</div>`;
+    return;
+  }
+  renderAnalysis(await r.json());
+}
+
+function renderAnalysis(a) {
+  const trendCls = a.trend.includes("up") ? "up" : a.trend.includes("down") ? "down" : "side";
+  const tiles = [
+    ["Price now", `${fmt(a.close)} ${a.currency}`],
+    ["Trend", a.trend],
+    ["RSI (momentum)", fmt(a.rsi14, 0)],
+    ["Below 52-wk high", a.pct_off_52w_high == null ? "—" : fmt(Math.abs(a.pct_off_52w_high),1)+"%"],
+    ["1m / 3m / 6m", `${fmt(a.ret_1m,1)}% / ${fmt(a.ret_3m,1)}% / ${fmt(a.ret_6m,1)}%`],
+    ["vs its index (3m)", a.rs_vs_index_3m == null ? "—" : fmt(a.rs_vs_index_3m,1)+" pts"],
+    ["50 / 200-day avg", `${fmt(a.sma50)} / ${fmt(a.sma200)}`],
+    ["Market cap", a.market_cap ? fmt(a.market_cap/1e9,1)+"B" : "—"],
+  ];
+  const patcards = a.patterns.length ? a.patterns.map(p => `
+    <div class="patcard">
+      <div style="display:flex;gap:10px;align-items:baseline">
+        <span class="tick" style="color:${p.direction==='bullish'?'var(--green)':'var(--red)'}">
+          ${p.direction === "bullish" ? "▲" : "▼"} ${p.pattern.replaceAll("_"," ")}</span>
+        <span class="status ${p.status}">${statusLabel(p.status)}</span>
+        <span class="faint" style="font-size:11px">confidence ${fmt(p.confidence*100,0)}%</span>
+      </div>
+      <div class="dim" style="font-size:12px;margin-top:3px">${p.note}</div>
+      <div style="font-size:12px;margin-top:4px">
+        ${p.direction === "bullish" ? "buy above" : "breakdown below"} <b>${fmt(p.entry)}</b>
+        · stop <b class="neg">${fmt(p.stop)}</b> · target <b class="pos">${fmt(p.target)}</b>
+        ${p.risk_reward ? `· R:R 1:${fmt(p.risk_reward,1)}` : ""}
+      </div>
+    </div>`).join("")
+    : `<div class="dim">No classic chart pattern on this chart right now.</div>`;
+  const analyst = a.analyst?.recommendation ? `
+    <div class="dim" style="margin-top:8px;font-size:12px">Analyst consensus:
+      <b>${a.analyst.recommendation.replaceAll("_"," ")}</b>
+      ${a.analyst.count ? `(${a.analyst.count} analysts)` : ""}
+      ${a.analyst.target_mean ? `· mean target ${fmt(a.analyst.target_mean)} ${a.currency}` : ""}</div>` : "";
+  el("detail").innerHTML = `
+    <h2>${a.ticker} <span class="dim" style="font-weight:400">${a.name}</span>
+      <span class="trendbadge ${trendCls}">${a.trend}</span></h2>
+    <div class="dim">${FLAG[a.market] ?? ""} ${a.market_label} · ${a.sector ?? ""}
+      ${a.industry ? "· " + a.industry : ""} · data up to ${a.as_of}</div>
+    <div id="chart"></div>
+    <h3>Snapshot</h3>
+    <div class="fundgrid">
+      ${tiles.map(([k,v]) => `<div class="fund">${k}<div><b>${v}</b></div></div>`).join("")}
+    </div>
+    <h3>Chart patterns</h3>
+    ${patcards}
+    <h3>Technical read (${fmt(a.technical_score,0)}/100)</h3>
+    <ul class="reasons">${a.technical_reasons.length
+      ? a.technical_reasons.map(r => `<li>${r}</li>`).join("")
+      : "<li>No bullish technical signals at the moment.</li>"}</ul>
+    <h3>Company quality ${a.fundamental_score == null ? "" : `(${fmt(a.fundamental_score,0)}/100)`}</h3>
+    ${a.fundamental_components?.length ? `
+    <div class="fundgrid">${a.fundamental_components.map(c => `
+      <div class="fund">${c.label}<div><b>${c.value==null?"—":
+        (Math.abs(c.value)<5 ? (c.value*100).toFixed(1)+"%" : fmt(c.value,1))}</b></div>
+      <div class="bar"><i style="width:${c.score??0}%"></i></div></div>`).join("")}</div>`
+      : `<div class="dim">No company data available.</div>`}
+    ${analyst}
+    ${dividendBlock(a.dividend, a.currency)}
+    <h3>Latest news</h3><div id="news"><div class="faint">Loading headlines…</div></div>
+    <div class="faint" style="margin-top:14px;font-size:11px">
+      avg daily volume ${a.avg_dollar_vol ? fmt(a.avg_dollar_vol/1e6,1)+"M "+a.currency : "—"}</div>`;
+  const b = a.best_bullish;
+  drawChart({ ticker: a.ticker, name: a.name, entry: b?.entry ?? null, stop: b?.stop ?? null,
+              target: b?.target ?? null, pattern: b?.pattern ?? null,
+              key_points: b?.key_points ?? [] });
+  loadNews(a.ticker);
+}
+
+document.addEventListener("click", e => {
+  if (!e.target.closest(".search")) el("sr").style.display = "none";
+});
+
+themeIcon(); tabs(); loadOverview(); loadScan();
+</script>
+</body>
+</html>
