@@ -1,0 +1,16 @@
+{
+  "capital_eur": 10000,
+  "risk_pct": 1.0,
+  "min_risk_reward": 1.8,
+  "max_position_pct": 25.0,
+  "shortlist_size": 45,
+  "markets": ["us", "de", "in"],
+  "dividend_max_age_days": 3,
+  "pattern_tuning": {
+    "auto_disable": true,
+    "min_avg_r": 0.0,
+    "min_trades": 30,
+    "disabled": { "us": [], "de": [], "in": [] }
+  },
+  "dashboard_password": "change-me-or-remove-for-no-login"
+}
