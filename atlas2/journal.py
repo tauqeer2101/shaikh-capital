@@ -22,9 +22,33 @@ CREATE TABLE IF NOT EXISTS trades (
     exit_date TEXT,
     exit_price REAL,
     exit_reason TEXT,
-    notes TEXT DEFAULT ''
+    notes TEXT DEFAULT '',
+    max_hold_days INTEGER
 );
 """
+
+# Columns added after the first release: (name, SQL type). Older journal files
+# get them via ALTER TABLE on open; existing rows keep NULL.
+ADDED_COLUMNS = (
+    # time exit of the strategy the trade came from: sell at the close of this
+    # many trading days after the entry if neither stop nor target was hit.
+    # NULL = not recorded (older rows / older scan files; the monitor then uses
+    # config backtest.max_hold), 0 = the strategy has no time exit (Comeback).
+    ("max_hold_days", "INTEGER"),
+)
+
+
+def _max_hold(v) -> int | None:
+    """Sanitise max_hold_days from the dashboard: a whole number >= 0, else None."""
+    if v is None or isinstance(v, bool) or v == "":
+        return None
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return None
+    if f != f or f < 0 or f > 10000:
+        return None
+    return int(round(f))
 
 
 class Journal:
@@ -33,6 +57,11 @@ class Journal:
         self.conn = sqlite3.connect(db_path)
         self.conn.row_factory = sqlite3.Row
         self.conn.executescript(SCHEMA)
+        have = {r[1] for r in self.conn.execute("PRAGMA table_info(trades)")}
+        for name, kind in ADDED_COLUMNS:
+            if name not in have:
+                self.conn.execute(f"ALTER TABLE trades ADD COLUMN {name} {kind}")
+        self.conn.commit()
 
     def close(self) -> None:
         self.conn.close()
@@ -40,14 +69,14 @@ class Journal:
     def add(self, t: dict) -> int:
         cur = self.conn.execute(
             """INSERT INTO trades (ticker, name, market, currency, pattern, grade,
-               entry_date, entry_price, shares, stop, target, notes)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+               entry_date, entry_price, shares, stop, target, notes, max_hold_days)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
                 t["ticker"], t.get("name", ""), t["market"], t.get("currency", ""),
                 t.get("pattern", ""), t.get("grade", ""),
                 t.get("entry_date") or date.today().isoformat(),
                 float(t["entry_price"]), float(t["shares"]), float(t["stop"]),
-                t.get("target"), t.get("notes", ""),
+                t.get("target"), t.get("notes", ""), _max_hold(t.get("max_hold_days")),
             ),
         )
         self.conn.commit()

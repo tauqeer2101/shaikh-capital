@@ -314,9 +314,66 @@ def alerts(limit: int = 30):
     return {"alerts": [json.loads(x) for x in reversed(lines)]}
 
 
+def _backtest_payload(bt_path: Path, cfg: dict) -> dict:
+    """The backtest file with verdicts recomputed under the CURRENT config, as the
+    scanner applies them: per pattern and per market total 'verdict' /
+    'verdict_reason' (the stored ones move to '*_at_backtest'), each market's
+    'currently_disabled' (manual lists + auto-disable, the scanner's own rule) and
+    a 'live_tuning' summary. Only these tuning fields are echoed from the config
+    (never the rest of it: it holds dashboard_password). Read-only."""
+    if not bt_path.exists():
+        return {"available": False}
+    d = json.loads(bt_path.read_text())
+    if not isinstance(d, dict):
+        return {"available": False}
+    try:
+        # lazy imports: scan pulls in yfinance
+        from .backtest import _n_tests, _note, pattern_verdict
+        from .scan import PATTERN_TUNING_DEFAULTS, _deep_merge, load_pattern_tuning
+
+        tuning = _deep_merge(PATTERN_TUNING_DEFAULTS, (cfg or {}).get("pattern_tuning") or {})
+        v2 = int(d.get("version") or 1) >= 2
+        for m, md in (d.get("markets") or {}).items():
+            if not isinstance(md, dict):
+                continue
+            disabled, live, _src = load_pattern_tuning(m, cfg or {}, bt_path=bt_path)
+            for pat, st in (md.get("per_pattern") or {}).items():
+                cur = live.get(pat) or {}
+                if v2 and isinstance(st, dict) and "verdict" in st and "verdict" in cur:
+                    st["verdict_at_backtest"] = st["verdict"]
+                    st["verdict_reason_at_backtest"] = st.get("verdict_reason")
+                    st["verdict"], st["verdict_reason"] = cur["verdict"], cur.get("verdict_reason")
+            t = md.get("total")
+            if v2 and isinstance(t, dict) and "net_avg_r" in t and "verdict" in t:
+                t["verdict_at_backtest"] = t.get("verdict")
+                t["verdict_reason_at_backtest"] = t.get("verdict_reason")
+                t["verdict"], t["verdict_reason"] = pattern_verdict(
+                    t, {**tuning, "n_tests": _n_tests(tuning) + 3})
+            md["currently_disabled"] = sorted(disabled)
+        if v2 and isinstance(d.get("markets"), dict):
+            # the headline counts follow the recomputed verdicts
+            d["note_at_backtest"] = d.get("note")
+            d["note"] = _note(d["markets"], (d.get("method") or {}).get("period") or {})
+        d["live_tuning"] = {
+            "applied": True,
+            "auto_disable": bool(tuning.get("auto_disable", True)),
+            "require_proven_edge": bool(tuning.get("require_proven_edge")),
+            "min_trades": tuning.get("min_trades"),
+            "min_avg_r": tuning.get("min_avg_r"),
+            "family_alpha": tuning.get("family_alpha"),
+            "n_tests": _n_tests(tuning),
+        }
+    except Exception:
+        d["live_tuning"] = {"applied": False}   # the stored verdicts stay as they are
+    return d
+
+
 @app.get("/api/backtest")
 def backtest_results():
-    path = ROOT / "data" / "backtest_latest.json"
-    if not path.exists():
-        return JSONResponse({"available": False})
-    return JSONResponse(json.loads(path.read_text()))
+    from .scan import load_config
+
+    try:
+        cfg = load_config()
+    except Exception:
+        cfg = {}
+    return JSONResponse(_backtest_payload(ROOT / "data" / "backtest_latest.json", cfg))

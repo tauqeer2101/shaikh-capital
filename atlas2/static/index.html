@@ -244,9 +244,78 @@
                       font-size: 12.5px; margin-top: 8px; }
   #helpmodal .gloss b { color: var(--blue); font-weight: 600; }
 
+  /* ---------- backtest view ---------- */
+  main[hidden], #btview[hidden] { display: none; }
+  #btview { padding: 12px 20px 26px; }
+  #btview h2 { margin-top: 4px; }
+  #btview h3 { margin-top: 24px; }
+  #btview code { font-size: 12px; background: var(--bg); border: 1px solid var(--border);
+                 border-radius: 6px; padding: 1px 6px; white-space: nowrap; }
+  .bthead { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .btintro { color: var(--dim); font-size: 12.5px; max-width: 920px; margin-top: 4px; }
+  .btbanner { padding: 11px 16px; margin: 12px 0 4px; border-radius: 14px; font-size: 12.5px;
+              border: 1px solid var(--bd-amber); background: var(--tint-amber);
+              box-shadow: var(--shadow); }
+  .btbanner.bad { border-color: var(--bd-red); background: var(--tint-red); }
+  .btbanner.good { border-color: var(--bd-green); background: var(--tint-green); }
+  .btbanner .big { font-size: 15px; font-weight: 650; display: block; margin-bottom: 3px; }
+  .btcards { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+             gap: 12px; margin-top: 12px; }
+  .btcard { background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+            padding: 12px 15px; box-shadow: var(--shadow); font-size: 12.5px; color: var(--dim); }
+  .btcard .mkt { font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .btcounts { display: flex; flex-wrap: wrap; gap: 5px; margin: 6px 0 7px; }
+  .vbadge { font-size: 10.5px; padding: 2px 8px; border-radius: 10px; font-weight: 600;
+            white-space: nowrap; cursor: help; display: inline-block; }
+  .vbadge.proven_edge { background: var(--green-bg); color: var(--green); }
+  .vbadge.unproven { background: var(--amber-bg); color: var(--amber); }
+  .vbadge.no_edge { background: var(--red-bg); color: var(--red); }
+  .vbadge.insufficient_data, .vbadge.unknown { background: var(--bg); color: var(--dim);
+            border: 1px solid var(--border); }
+  .vbadge.zero { opacity: .45; }
+  .btpanel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+             box-shadow: var(--shadow); overflow-x: auto; }
+  .btpanel.pad { padding: 12px 15px; }
+  .btpanel table.bt { min-width: 900px; }
+  .btpanel table.bt.narrow { min-width: 520px; }
+  .btpanel table.bt.pf td:first-child { min-width: 190px; }
+  #btview th { background: var(--panel); position: static; white-space: nowrap; cursor: help; }
+  .btpanel table.bt.pat tr:not(.btdetail) > td:first-child { white-space: nowrap; }
+  #btview .n { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .ci { display: block; font-size: 10.5px; color: var(--faint); font-weight: 400; }
+  tr.bttotal > td { font-weight: 650; border-top: 2px solid var(--border); }
+  tr.btsys > td { font-weight: 650; background: var(--tint-blue); }
+  tr.btdetail > td { background: var(--bg); padding: 10px 14px 14px; }
+  tr.btdetail[hidden] { display: none; }
+  .btdwrap { position: sticky; left: 14px; max-width: min(100%, calc(100vw - 72px)); }
+  .caret { color: var(--faint); display: inline-block; width: 14px; transition: transform .15s; }
+  tr.open .caret { transform: rotate(90deg); }
+  .btreason { margin-bottom: 8px; font-size: 12.5px; }
+  .btkv { display: grid; grid-template-columns: minmax(150px, 230px) 1fr; gap: 5px 14px;
+          font-size: 12.5px; }
+  .btkv > b { color: var(--dim); font-weight: 600; }
+  .btyears { margin-top: 10px; max-width: 460px; }
+  .btyears td, .btyears th { padding: 4px 8px; }
+  .btfoot { font-size: 11.5px; color: var(--faint); padding: 8px 12px 10px;
+            border-top: 1px solid var(--row-line); }
+  ul.btlist { margin: 0; padding-left: 18px; } ul.btlist li { margin: 2px 0; }
+  ul.caveats { margin: 6px 0; padding-left: 20px; } ul.caveats li { margin: 5px 0; color: var(--dim); }
+  #btview details { margin-top: 10px; }
+  #btview details summary { cursor: pointer; color: var(--dim); font-size: 12.5px; margin: 6px 0; }
+
   @media (max-width: 900px) {
     main { grid-template-columns: 1fr; height: auto; }
     #list { max-height: 55vh; border-right: none; }
+    .tabs { flex-wrap: wrap; }
+    #btview { padding: 10px 16px 22px; }
+    .btkv { grid-template-columns: 1fr; gap: 1px 0; }
+    .btkv > span { margin-bottom: 6px; }
+    /* keep the pattern name visible while swiping a wide table sideways */
+    .btpanel table.bt.pat tr:not(.btdetail) > td:first-child,
+    .btpanel table.bt.pat th:first-child { position: sticky; left: 0; z-index: 2;
+                                           background: var(--panel); }
+    .btpanel table.bt.pat tr:not(.btdetail) > td:first-child { white-space: normal;
+                                                               min-width: 110px; max-width: 36vw; }
   }
 </style>
 </head>
@@ -273,6 +342,8 @@
   <div id="detail"><div class="empty">Pick a stock from the list — or search for any stock above.</div></div>
 </main>
 
+<section id="btview" hidden></section>
+
 <footer>Shaikh Capital is an analysis tool, not investment advice. Every trade can lose money —
 the safety stop limits how much. Data: Yahoo Finance (free, may lag). Settings in config.json.</footer>
 
@@ -288,16 +359,20 @@ the safety stop limits how much. Data: Yahoo Finance (free, may lag). Settings i
       <li>The best candidates show up as a ranked list of <b>setups</b>.
         <span class="grade A" style="vertical-align:middle">A</span> = strongest.
         Click one to see everything about it.</li>
-      <li>Each setup gives you a complete plan of three prices:
-        <b>Buy above</b> (only buy if the price rises past this),
+      <li>Each setup gives you a complete plan of three prices and a time limit:
+        <b>Buy above</b> (only buy if the price rises past this — and not if it opens far above
+        the "buy up to" price),
         <b>Safety stop</b> (sell here if it drops — this caps your loss at roughly 1% of
-        your capital with the suggested share count), and
-        <b>Target</b> (where to take your profit).</li>
+        your capital with the suggested share count),
+        <b>Target</b> (where to take your profit), and the <b>time exit</b> (if neither stop
+        nor target is hit, sell at the close of the last allowed trading day — the backtest
+        numbers assume this).</li>
       <li>The colored banner shows <b>overall market health</b>. 🔴 Red means the whole
         market is falling — even good-looking stocks fail often then. Best to wait.</li>
       <li>Took a trade? Press <b>Log this trade</b> and enter the exact price you paid.
         Shaikh Capital then watches it hourly and pops up a notification when your stop or
-        target is hit. The 📒 Journal tab shows how you're really doing over time.</li>
+        target is hit, and a reminder on the morning of the time-exit day (sell at that day's
+        close). The 📒 Journal tab shows how you're really doing over time.</li>
     </ol>
     <h3>Words you'll see</h3>
     <div class="gloss">
@@ -308,6 +383,8 @@ the safety stop limits how much. Data: Yahoo Finance (free, may lag). Settings i
       <b>Reward : Risk</b><span>how much you stand to win vs. lose; 1:2 means winning pays double the risk</span>
       <b>RSI</b><span>momentum meter 0–100; over ~70 = maybe overheated, under ~30 = beaten down</span>
       <b>⚠E</b><span>company reports earnings within a week — prices can jump past your stop; be careful</span>
+      <b>Time exit</b><span>sell at the close of the Nth trading day after you bought if neither stop nor target was hit (N is shown on each setup)</span>
+      <b>Buy up to</b><span>the highest price the backtest buys at (by default 3% above "buy above"); if the stock opens higher, skip it</span>
     </div>
     <div style="margin-top:18px"><button class="btn" onclick="el('helpmodal').style.display='none'">Got it</button></div>
   </div>
@@ -315,7 +392,7 @@ the safety stop limits how much. Data: Yahoo Finance (free, may lag). Settings i
 
 <script>
 const MARKETS = { us: "🇺🇸 US", de: "🇩🇪 Germany", in: "🇮🇳 India",
-                  comeback: "💎 Comeback", journal: "📒 Journal" };
+                  comeback: "💎 Comeback", journal: "📒 Journal", backtest: "🧪 Backtest" };
 const FLAG = { us: "🇺🇸", de: "🇩🇪", in: "🇮🇳" };
 const REGIME_ICON = { healthy: "🟢", caution: "🟡", downtrend: "🔴", unknown: "⚪", off: "⚪" };
 let current = "us", scanData = null, chart = null, sel = null, lastChartCtx = null;
@@ -323,6 +400,12 @@ let current = "us", scanData = null, chart = null, sel = null, lastChartCtx = nu
 const fmt = (v, d=2) => v == null ? "—" : Number(v).toLocaleString("en-US", {maximumFractionDigits: d});
 const el = id => document.getElementById(id);
 const statusLabel = s => s === "forming" ? "watching" : "breakout";
+/* the time exit to trade (config backtest.max_hold, which the monitor enforces);
+   no fall-back, so old scan files and strategies without one (Comeback) show
+   nothing wrong. exit_rule.backtest_max_hold_days is the one the stored backtest used. */
+const maxHold = () => { const n = scanData?.exit_rule?.max_hold_days; return Number.isFinite(n) ? n : null; };
+const escH = s => String(s ?? "").replace(/[&<>"']/g,
+  c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 /* ---------- theme ---------- */
 function themeIcon() {
@@ -343,10 +426,19 @@ function tabs() {
   el("tabs").innerHTML = Object.entries(MARKETS).map(([k, label]) =>
     `<button class="tab ${k===current?'active':''}" onclick="switchMarket('${k}')">${label}</button>`).join("");
 }
+let lastView = "us";   // last non-backtest tab, restored when leaving the Backtest view
+function showBacktestView(on) {
+  document.querySelector("main").hidden = on;
+  el("btview").hidden = !on;
+}
 async function switchMarket(m) {
   current = m; tabs();
   wideMode = false;  // exit full-screen chart on navigation
-  if (m === "journal") await loadJournal(); else await loadScan();
+  showBacktestView(m === "backtest");
+  if (m !== "backtest") lastView = m;
+  if (m === "journal") await loadJournal();
+  else if (m === "backtest") await loadBacktest();
+  else await loadScan();
 }
 
 /* ---------- overview strip ---------- */
@@ -390,8 +482,55 @@ async function loadScan() {
   scanData = await r.json();
   renderList();
   if (scanData.setups.length) select(0);
-  else el("detail").innerHTML = `<div class="empty">No qualifying setups today. That's normal —
-    some days the market simply offers nothing worth buying.</div>`;
+  else el("detail").innerHTML = `<div class="empty">${emptyText(true)}</div>`;
+}
+
+/* switched-off patterns by source: manual config lists vs the backtest's verdicts
+   (older scan files without the split count every disabled pattern as the backtest's) */
+function tuningSources() {
+  const pt = scanData?.pattern_tuning || {};
+  const dis = Array.isArray(pt.disabled) ? pt.disabled : [];
+  const manual = Array.isArray(pt.manual) ? pt.manual : [];
+  const auto = Array.isArray(pt.auto) ? pt.auto : dis.filter(p => !manual.includes(p));
+  const verdicts = pt.verdicts || {};
+  const words = [...new Set(auto.map(p => VERDICTS[verdicts[p]]?.[0]).filter(Boolean))];
+  return { pt, dis, manual, auto, verdictText: words.length ? words.join(" / ") : "no edge after fees" };
+}
+const tuneNames = l => escH(l.map(p => p.replaceAll("_", " ")).join(", "));
+
+/* why the list is empty: tuned-out patterns vs a genuinely quiet market */
+function emptyText(long) {
+  const { pt, manual, auto, verdictText } = tuningSources();
+  const autoHint = `To see those setups anyway set <code>pattern_tuning.auto_disable=false</code> in config.json.`;
+  const manualHint = manual.length ? ` ${tuneNames(manual)} ${manual.length > 1 ? "are" : "is"} switched off
+    manually in config.json (<code>pattern_tuning.disabled</code>) — remove ${manual.length > 1 ? "them" : "it"} there to see
+    ${manual.length > 1 ? "their" : "its"} setups again.` : "";
+  if (pt.all_judged_disabled) return `All patterns in this market with enough history are switched off by the
+    backtest (${escH(verdictText)}) — see the 🧪 Backtest tab. ${autoHint}${manualHint}`;
+  if (auto.length) return `No setups from the patterns still switched on. The backtest switched off
+    ${tuneNames(auto)} in this market (${escH(verdictText)}) — see the 🧪 Backtest tab. ${autoHint}${manualHint}`;
+  if (manual.length) return `No setups from the patterns still switched on.${manualHint}`;
+  return long ? `No qualifying setups today. That's normal — some days the market simply
+    offers nothing worth buying.` : "No qualifying setups.";
+}
+
+/* which patterns are switched off in this market (manually or by the backtest), and why */
+function tuningBanner() {
+  const { pt, manual, auto } = tuningSources();
+  if (!scanData?.pattern_tuning) return "";
+  const reasons = pt.reasons || {};
+  const verdicts = pt.verdicts || {};
+  const parts = [];
+  if (auto.length) parts.push(`<b>Switched off by the backtest</b> <span class="faint">(${escH(pt.source)})</span>: ` +
+    auto.map(p => `<span title="${escH(reasons[p] || VERDICTS[verdicts[p]]?.[0] || "switched off by the backtest")}">${escH(p.replaceAll("_", " "))}</span>`).join(", "));
+  if (manual.length) parts.push(`<b>Switched off manually</b> in config.json (pattern_tuning.disabled): ${tuneNames(manual)}`);
+  const untested = Array.isArray(pt.untested) ? pt.untested : [];
+  if (untested.length) parts.push(`untested / too few trades: ${tuneNames(untested)}`);
+  if (pt.note) parts.push(`⚠ ${escH(pt.note)}`);
+  if (pt.has_backtest === false) parts.unshift(`No backtest for this market yet — nothing is tuned
+    <span class="faint">(${escH(pt.source)})</span>`);
+  if (!parts.length) return "";
+  return `<div class="regime side" style="font-size:12px">🧪 ${parts.join(" · ")}</div>`;
 }
 
 function regimeBanner() {
@@ -428,6 +567,7 @@ function renderList() {
     </tbody></table>` : "";
   el("list").innerHTML = `
     ${regimeBanner()}
+    ${tuningBanner()}
     <table><thead><tr>
       <th title="A = strongest setups"></th><th>Stock</th><th>Pattern</th>
       <th title="latest closing price">Price</th>
@@ -436,7 +576,7 @@ function renderList() {
       <th title="where to take profit">Target</th>
       <th title="potential reward vs. risk">R:R</th><th>Score</th>
     </tr></thead><tbody>${rows}</tbody></table>
-    ${scanData.setups.length ? "" : `<div class="empty">No qualifying setups.</div>`}
+    ${scanData.setups.length ? "" : `<div class="empty">${emptyText(false)}</div>`}
     ${warns}`;
 }
 
@@ -451,18 +591,38 @@ function actionBox(s) {
   if (s.earnings_soon) extra = ` <b style="color:var(--amber)">Careful:</b> earnings in
     ${s.earnings_in_days} day(s) — prices can gap past your stop overnight. Consider skipping
     this one or using half size.`;
-  if (s.status === "forming")
+  const N = maxHold();
+  const btN = scanData?.exit_rule?.backtest_max_hold_days;
+  const timeLimit = N ? ` <b>Time limit:</b> if neither the stop nor the target has been hit by the
+    close of the ${N}th trading day after the day you buy, sell at that close — ${
+    Number.isFinite(btN) && btN !== N
+      ? `note: the stored backtest numbers assume ${btN} days (config.json was changed since; re-run the backtest).`
+      : "the backtest numbers assume this."}` : "";
+  const hasCap = s.max_buy != null;
+  if (s.status === "forming") {
+    const how = hasCap
+      ? `The backtest only buys between ${fmt(s.entry)} and ${fmt(s.max_buy)} (${fmt(s.max_gap_pct,1)}% above).
+        A plain buy stop left overnight fills at whatever price the stock opens at, so check the
+        open each day: if it opens above ${fmt(s.max_buy)}, skip this setup (the backtest drops it).
+        Otherwise a buy stop at ${fmt(s.entry)} matches the backtest. (The closest broker order
+        is a stop-limit — stop ${fmt(s.entry)}, limit ${fmt(s.max_buy)} — but it can still fill
+        later in the day, which the backtest does not count.)`
+      : `You can place a "buy stop" order at ${fmt(s.entry)} with your broker, or check back after
+        the close.`;
     return `<div class="action wait"><b>👀 Nothing to do yet — watch</b>
       The pattern is ready, but the price (${fmt(s.close)}) hasn't broken out yet.
       The trade only starts <b>if the price rises above ${fmt(s.entry)} ${s.currency}</b>.
-      You can place a "buy stop" order at ${fmt(s.entry)} with your broker, or check back after
-      the close. If it triggers: safety stop at ${fmt(s.stop)}, take profit near ${fmt(s.target)},
-      suggested ${fmt(s.position.shares,0)} shares.${extra}</div>`;
+      ${how} If it triggers: safety stop at ${fmt(s.stop)}, take profit near ${fmt(s.target)},
+      suggested ${fmt(s.position.shares,0)} shares.${timeLimit}${extra}</div>`;
+  }
+  const buyRule = hasCap
+    ? ` Buy at the next open only if it opens at or below ${fmt(s.max_buy)} and above your stop
+      ${fmt(s.stop)}; otherwise skip it.` : "";
   return `<div class="action go"><b>🚀 Breakout happened</b>
     The price just broke above ${fmt(s.entry)} ${s.currency}. If you take it:
     buy ~${fmt(s.position.shares,0)} shares (≈ €${fmt(s.position.cost_eur,0)}), set your
     safety stop at ${fmt(s.stop)} immediately, and plan to take profit near ${fmt(s.target)}.
-    Your maximum planned loss is about €${fmt(s.position.risk_eur,0)}.${extra}</div>`;
+    Your maximum planned loss is about €${fmt(s.position.risk_eur,0)}.${buyRule}${timeLimit}${extra}</div>`;
 }
 
 async function select(i) {
@@ -488,6 +648,8 @@ async function select(i) {
         <div class="v pos">${fmt(s.target)}</div><div class="s">+${fmt(s.upside_pct,1)}%</div></div>
       <div class="lvl"><div class="k" title="potential win vs. potential loss">Reward : Risk</div>
         <div class="v">1 : ${fmt(s.risk_reward,1)}</div></div>
+      ${maxHold() ? `<div class="lvl"><div class="k" title="the backtest sells at this close if neither stop nor target was hit">Time exit</div>
+        <div class="v">${maxHold()} trading days</div><div class="s">sell at the close if stop/target not hit</div></div>` : ""}
       <div class="lvl"><div class="k" title="sized so one loss ≈ 1% of your capital">Suggested size</div>
         <div class="v">${fmt(s.position.shares,0)} sh</div>
         <div class="s">≈ €${fmt(s.position.cost_eur,0)} · max loss €${fmt(s.position.risk_eur,0)}</div></div>
@@ -573,6 +735,8 @@ async function showLogForm() {
        Replace with your exact fill from your broker.`
     : `Pre-filled with the breakout level — right for a "buy stop" order. If you bought at a
        different price, enter your exact fill from your broker.`;
+  const capHint = s.max_buy != null ? ` The backtest only buys up to ${fmt(s.max_buy)} — if the
+       stock opened higher, the backtest would have skipped this trade.` : "";
   el("logform").innerHTML = `
     <div class="fund" style="max-width:540px">
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
@@ -580,7 +744,7 @@ async function showLogForm() {
         <label class="dim">Shares<input id="f_shares" type="number" step="any" value="${s.position.shares}"></label>
         <label class="dim">Date<input id="f_date" type="date" value="${new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10)}"></label>
       </div>
-      <div class="faint" style="font-size:11px;margin-top:6px">${fillHint}</div>
+      <div class="faint" style="font-size:11px;margin-top:6px">${fillHint}${capHint}</div>
       <label class="dim" style="display:block;margin-top:8px">Notes
         <input id="f_notes" type="text" placeholder="optional" style="width:100%"></label>
       <div style="margin-top:10px;display:flex;gap:8px">
@@ -600,6 +764,10 @@ async function submitLog() {
     shares: parseFloat(el("f_shares").value),
     stop: s.stop, target: s.target,
     entry_date: el("f_date").value, notes: el("f_notes").value,
+    // the strategy's time exit, so the monitor can remind you on that day:
+    // the scan's rule when it has one; Comeback has none (0); an older pattern
+    // scan file sends null and the monitor falls back to config backtest.max_hold
+    max_hold_days: maxHold() ?? (current === "comeback" ? 0 : null),
   };
   const r = await fetch("/api/journal", { method: "POST",
     headers: {"Content-Type": "application/json"}, body: JSON.stringify(body) });
@@ -778,14 +946,14 @@ async function loadJournal() {
 
 function renderAlerts(alerts) {
   if (!alerts.length) return;
-  const icon = { stop: "🔴", target: "🟢", entry: "🔵" };
+  const icon = { stop: "🔴", target: "🟢", entry: "🔵", time: "⏰" };
   el("detail").innerHTML = `
     <h3 style="margin-top:4px">Recent alerts</h3>
     ${alerts.slice(0, 25).map(a => `
       <div class="patcard" style="padding:9px 13px">
         <span>${icon[a.kind] ?? "•"}</span>
         <b>${a.ticker}</b> <span class="faint" style="font-size:11px">${a.time.replace("T"," ")}</span>
-        <div class="dim" style="font-size:12px">${a.message} — price was ${fmt(a.price)}</div>
+        <div class="dim" style="font-size:12px">${a.message}${a.price != null ? ` — price was ${fmt(a.price)}` : ""}</div>
       </div>`).join("")}
     <div class="faint" style="font-size:11px;margin-top:8px">The monitor checks hourly on
       weekdays (09:00–22:00) and also sends macOS notifications.</div>`;
@@ -794,7 +962,7 @@ function renderAlerts(alerts) {
 async function closeTrade(id, suggested) {
   const px = prompt("Exit price:", suggested);
   if (px == null || px === "") return;
-  const reason = prompt("Reason (target / stop / manual):", "manual") || "manual";
+  const reason = prompt("Reason (target / stop / time / manual):", "manual") || "manual";
   await fetch(`/api/journal/${id}/close`, { method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({ exit_price: parseFloat(px), exit_reason: reason }) });
@@ -838,6 +1006,9 @@ function onSearch() {
 async function pickStock(ticker) {
   el("sr").style.display = "none";
   el("q").value = ticker;
+  if (current === "backtest") {   // the analysis renders in the stock panel — go back to it
+    current = lastView; tabs(); showBacktestView(false);
+  }
   el("detail").innerHTML = `<div class="empty">Analyzing ${ticker}…<br>
     <span style="font-size:12px">fetching prices, patterns, company data and news — a few seconds for new stocks</span></div>`;
   let r;
@@ -922,6 +1093,724 @@ function renderAnalysis(a) {
               target: b?.target ?? null, pattern: b?.pattern ?? null,
               key_points: b?.key_points ?? [] });
   loadNews(a.ticker);
+}
+
+/* ---------- backtest view ----------
+   Renders data/backtest_latest.json (served verbatim by GET /api/backtest).
+   v2 = after-fees stats, market/random baselines, verdicts, embedded "portfolio" block.
+   v1 (no "version") = old gross win rate / avg R only — shown with an upgrade banner.
+   Every string that comes from the file goes through esc(). */
+const esc = s => String(s ?? "").replace(/[&<>"']/g,
+  c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const isNum = v => typeof v === "number" && isFinite(v);
+const fx = (v, d = 2) => isNum(v)
+  ? v.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d }) : "—";
+const isZero = (v, d) => Number(Math.abs(v).toFixed(d)) === 0;
+/* signed number: +0.41% / −0.30% / 0.00% */
+const sgn = (v, d = 2, unit = "") => !isNum(v) ? "—"
+  : (isZero(v, d) ? "" : v > 0 ? "+" : "−") + fx(Math.abs(v), d) + unit;
+/* green for positive, red for negative (judged on the displayed rounding) */
+const pn = (v, d = 2) => !isNum(v) ? "faint" : isZero(v, d) ? "" : v > 0 ? "pos" : "neg";
+const pct = (v, d = 1) => isNum(v) ? fx(v, d) + "%" : "—";
+const perYr = v => isNum(v) ? (isZero(v, 1) ? "" : v < 0 ? "−" : "") + fx(Math.abs(v), 1) + "%/yr" : "—";
+const pretty = k => String(k ?? "").replaceAll("_", " ");
+const BT_ORDER = ["us", "de", "in"];
+const btMarkets = obj => Object.keys(obj || {}).sort((a, b) =>
+  ((BT_ORDER.indexOf(a) + 1) || 99) - ((BT_ORDER.indexOf(b) + 1) || 99));
+const mkLabel = m => MARKETS[m] ?? esc(String(m).toUpperCase());
+const btDate = g => esc(String(g ?? "").replace("T", " ").slice(0, 16));
+
+const VERDICTS = {
+  proven_edge: ["proven edge", "Beat holding the market after fees — statistically clear in this backtest after adjusting for all pattern x market tests (still in-sample)."],
+  unproven: ["unproven", "Positive on average, but not distinguishable from luck once all pattern x market tests are counted."],
+  no_edge: ["no edge", "Did not beat holding the market after fees (or lost money)."],
+  insufficient_data: ["too little data", "Too few historical trades to judge."],
+};
+const VERDICT_RANK = { proven_edge: 0, unproven: 1, no_edge: 2, insufficient_data: 3 };
+function vbadge(v, reason, text, extra = "") {
+  const known = VERDICTS[v];
+  const label = text ?? (known ? known[0] : v ? pretty(v) : "no verdict");
+  return `<span class="vbadge ${known ? v : "unknown"} ${extra}" title="${esc(reason || (known ? known[1] : ""))}">${esc(label)}</span>`;
+}
+/* 95% interval: accepts [lo, hi] or {lo, hi} / {low, high} / {lower, upper}; null otherwise */
+function ciPair(v) {
+  if (Array.isArray(v) && v.length >= 2 && isNum(v[0]) && isNum(v[1])) return [v[0], v[1]];
+  if (v && typeof v === "object") {
+    const lo = v.lo ?? v.low ?? v.lower, hi = v.hi ?? v.high ?? v.upper;
+    if (isNum(lo) && isNum(hi)) return [lo, hi];
+  }
+  return null;
+}
+const ciText = (v, d, unit) => { const c = ciPair(v); return c ? `${sgn(c[0], d, unit)} … ${sgn(c[1], d, unit)}` : null; };
+/* pattern x market tests behind the verdicts shown: the current config's when the
+   server recomputed them (live_tuning), else the backtest-time figure */
+const nTests = d => d?.live_tuning?.applied === true && isNum(d.live_tuning.n_tests)
+  ? d.live_tuning.n_tests
+  : isNum(d?.method?.verdicts?.n_tests) ? d.method.verdicts.n_tests : 18;
+
+/* generic, escaped rendering of any JSON value (for method fields we don't know by name) */
+function kv(v) {
+  if (v == null) return "—";
+  if (Array.isArray(v)) return v.map(kv).join(", ");
+  if (typeof v === "object") return Object.entries(v)
+    .map(([k, x]) => `${MARKETS[k] ?? esc(pretty(k))}: ${kv(x)}`).join(" · ");
+  if (typeof v === "number") return fmt(v, 4);
+  if (typeof v === "boolean") return v ? "yes" : "no";
+  return esc(v);
+}
+function listOrKv(v) {
+  if (Array.isArray(v)) return `<ul class="btlist">${v.map(x => `<li>${kv(x)}</li>`).join("")}</ul>`;
+  if (v && typeof v === "object") return `<ul class="btlist">${Object.entries(v)
+    .map(([k, x]) => `<li><b>${MARKETS[k] ?? esc(pretty(k))}:</b> ${kv(x)}</li>`).join("")}</ul>`;
+  return kv(v);
+}
+
+async function loadBacktest() {
+  const box = el("btview");
+  box.innerHTML = `<div class="empty">Loading backtest results…</div>`;
+  let r;
+  try {
+    r = await fetch("/api/backtest");
+  } catch (e) {
+    box.innerHTML = `<div class="empty">Connection hiccup — the Mac may be asleep or the network
+      dropped.<br><br><button class="btn" onclick="loadBacktest()">Try again</button></div>`;
+    return;
+  }
+  if (r.status === 401) { location.href = "/login"; return; }
+  let d;
+  try {
+    if (!r.ok) throw new Error(`server answered ${r.status}`);
+    d = await r.json();
+  } catch (e) {
+    box.innerHTML = `<div class="empty">Could not read the backtest results (${esc(e.message)}).<br>
+      Re-run <code>python -m atlas2 backtest</code> and reload.<br><br>
+      <button class="btn" onclick="loadBacktest()">Try again</button></div>`;
+    return;
+  }
+  if (current !== "backtest") return;   // user already switched away
+  box.innerHTML = renderBacktest(d);
+}
+
+function renderBacktest(d) {
+  if (!d || d.available === false || !d.markets || !btMarkets(d.markets).length)
+    return `<div class="empty"><b>No backtest yet.</b><br><br>Run
+      <code>python -m atlas2 backtest</code> (takes a while — it replays ~10 years of prices),
+      then come back to this tab.</div>`;
+  return (Number(d.version) || 1) >= 2 ? renderBacktestV2(d) : renderBacktestV1(d);
+}
+
+/* ---- old (v1) file: gross numbers only ---- */
+function renderBacktestV1(d) {
+  const mk = btMarkets(d.markets);
+  const section = m => {
+    const md = d.markets[m] || {};
+    const rows = Object.entries(md.per_pattern || {}).map(([p, s]) => {
+      s = s || {};
+      const o = s.outcomes || {};
+      return `<tr>
+        <td>${esc(pretty(p))}</td>
+        <td class="n">${fmt(s.trades, 0)}</td>
+        <td class="n">${pct(s.win_rate)}</td>
+        <td class="n ${pn(s.avg_r)}">${sgn(s.avg_r, 2, "R")}</td>
+        <td class="n ${pn(s.avg_ret_pct)}">${sgn(s.avg_ret_pct, 2, "%")}</td>
+        <td class="n">${fx(s.avg_hold_bars, 1)}</td>
+        <td class="n dim">${fmt(o.target, 0)} / ${fmt(o.stop, 0)} / ${fmt(o.time, 0)}</td>
+      </tr>`;
+    }).join("");
+    const t = md.total || {};
+    return `<h3>${mkLabel(m)}</h3>
+      <div class="btpanel"><table class="bt narrow"><thead><tr>
+        <th title="chart pattern">Pattern</th><th class="n">Trades</th>
+        <th class="n" title="before fees">Win rate</th>
+        <th class="n" title="average result in units of the risk taken (buy-to-stop distance), before fees">Avg R</th>
+        <th class="n" title="before fees">Avg return / trade</th>
+        <th class="n" title="trading days held">Avg hold</th>
+        <th class="n" title="how trades ended">Target / stop / time</th>
+      </tr></thead><tbody>${rows || `<tr><td colspan="7" class="dim">No trades.</td></tr>`}
+        <tr class="bttotal"><td>Total</td><td class="n">${fmt(t.trades, 0)}</td>
+          <td class="n">${pct(t.win_rate)}</td><td class="n ${pn(t.avg_r)}">${sgn(t.avg_r, 2, "R")}</td>
+          <td colspan="3"></td></tr>
+      </tbody></table></div>`;
+  };
+  return `
+    <div class="bthead"><h2>🧪 Backtest</h2><span class="faint">generated ${btDate(d.generated)}</span></div>
+    <div class="btbanner"><span class="big">⚠ Old backtest format (no fees, no market comparison)</span>
+      These numbers are before fees and slippage, and are not compared with simply holding the
+      market — they flatter the patterns. To get the honest version run:
+      <code>python -m atlas2 backtest</code></div>
+    ${d.note ? `<div class="btintro">${esc(d.note)}</div>` : ""}
+    ${mk.map(section).join("")}`;
+}
+
+/* ---- v2 file ---- */
+function renderBacktestV2(d) {
+  const mk = btMarkets(d.markets);
+  const pf = d.portfolio && typeof d.portfolio === "object" ? d.portfolio : null;
+  const L = d.live_tuning?.applied === true;
+  return `
+    <div class="bthead"><h2>🧪 Backtest</h2>
+      <span class="faint">generated ${btDate(d.generated)}</span></div>
+    <div class="btintro">Would the trades this scanner shows have made money — <b>after fees</b>,
+      and <b>compared with simply holding the market</b> over the exact same days? Replayed on
+      ~10 years of daily prices with the live scanner's own filters and shortlist. Click any
+      pattern row for the details.
+      ${L ? "" : `<br><span class="faint">Verdicts as stored at backtest time; the live scanner
+        recalculates them with your current config on every scan.</span>`}</div>
+    ${btHeadline(d, mk, pf)}
+    ${mk.map((m, mi) => btMarketSection(d.markets[m], m, mi, d)).join("")}
+    ${btPortfolio(pf, d)}
+    ${btMethod(d)}`;
+}
+
+/* sorted copy of a pattern list (non-arrays count as none) */
+const btSorted = l => (Array.isArray(l) ? l.map(String) : []).sort();
+/* markets whose current switched-off list (the server's currently_disabled) differs
+   from `lists`, a {market: [patterns]} map frozen when a replay ran; [] when the
+   server did not recompute (nothing to compare) */
+function btDisabledChanged(d, lists) {
+  if (!lists || typeof lists !== "object") return [];
+  return btMarkets(d?.markets).filter(m => {
+    const now = d.markets[m]?.currently_disabled;
+    return Array.isArray(now) && JSON.stringify(btSorted(lists[m])) !== JSON.stringify(btSorted(now));
+  });
+}
+const btListText = (lists, ms) => ms.map(m => `${mkLabel(m)}: ${
+  btSorted(lists?.[m]).length ? esc(btSorted(lists[m]).map(pretty).join(", ")) : "none"}`).join(" · ");
+
+/* patterns the live scanner switches off in a market: the server's current list
+   when it provides one, else the list the backtest itself replayed with */
+function btDisabled(md) {
+  if (Array.isArray(md?.currently_disabled)) return { list: md.currently_disabled, now: true };
+  if (Array.isArray(md?.live_config?.disabled)) return { list: md.live_config.disabled, now: false };
+  return { list: [], now: false };
+}
+
+function btSystemProfile(profiles) {
+  const byKey = k => profiles.find(p => p?.key === k) ?? null;
+  const isWF = p => p?.key === "as_designed_walk_forward" || /walk-forward/i.test(p?.label || "");
+  // key first; the label regex is only for files without keys, and never matches walk-forward
+  const enabledOnly = p => p?.key === "as_designed_enabled_only" ||
+    (!p?.key && !isWF(p) && /enabled patterns only/i.test(p?.label || ""));
+  return {
+    system: byKey("as_designed")
+      ?? profiles.find(p => !p?.key && /system as designed/i.test(p?.label || "") && !enabledOnly(p) && !isWF(p)) ?? null,
+    enabled: profiles.find(enabledOnly) ?? null,
+    walkForward: byKey("as_designed_walk_forward") ?? profiles.find(p => !p?.key && isWF(p)) ?? null,
+  };
+}
+/* slot-ordering range: p5-p95 over the reshuffled orderings (min-max in older files) */
+function btTieRange(p) {
+  const t = p?.tie_break_sensitivity;
+  const q = t?.cagr_pct;
+  if (q && typeof q === "object" && isNum(q.p5) && isNum(q.p95)) return `${perYr(q.p5)} … ${perYr(q.p95)}`;
+  return t && isNum(t.cagr_pct_min) && isNum(t.cagr_pct_max) && t.cagr_pct_min !== t.cagr_pct_max
+    ? `${perYr(t.cagr_pct_min)} … ${perYr(t.cagr_pct_max)}` : null;
+}
+const btProfiles = pf => Array.isArray(pf?.profiles) ? pf.profiles : [];
+/* per-market benchmark entries: bench.markets / bench.per_market, or market keys at the top level */
+function btBenchMarkets(bench) {
+  if (!bench || typeof bench !== "object") return {};
+  const nested = bench.markets ?? bench.per_market;
+  if (nested && typeof nested === "object") return nested;
+  return Object.fromEntries(Object.entries(bench).filter(([, v]) =>
+    v && typeof v === "object" && !Array.isArray(v) &&
+    ("index_cagr_pct" in v || "universe_equal_weight_cagr_pct" in v)));
+}
+
+function btHeadline(d, mk, pf) {
+  let provenTotal = 0;
+  const L = d.live_tuning?.applied === true;
+  const autoOn = L ? d.live_tuning.auto_disable !== false : null;
+  const cards = mk.map(m => {
+    const md = d.markets[m] || {};
+    const per = md.per_pattern || {};
+    const c = { proven_edge: [], unproven: [], no_edge: [], insufficient_data: [], other: [] };
+    for (const [p, s] of Object.entries(per))
+      (s && Object.prototype.hasOwnProperty.call(VERDICTS, s.verdict) ? c[s.verdict] : c.other).push(pretty(p));
+    provenTotal += c.proven_edge.length;
+    const chip = (k, text) => vbadge(k, c[k].length ? c[k].join(", ") : "", text, c[k].length ? "" : "zero");
+    const t = md.total || {};
+    const dis = btDisabled(md);
+    const offChip = dis.list.length
+      ? vbadge("no_edge", dis.list.map(pretty).join(", "),
+          `${dis.list.length} switched off in the live scanner${dis.now ? "" : " (at backtest time)"}`)
+      : vbadge("proven_edge", "", `none switched off${dis.now ? "" : " (at backtest time)"}`, "zero");
+    return `<div class="btcard">
+      <div class="mkt">${mkLabel(m)}</div>
+      <div class="btcounts">
+        ${chip("proven_edge", `${c.proven_edge.length} proven edge`)}
+        ${chip("unproven", `${c.unproven.length} unproven`)}
+        ${chip("no_edge", `${c.no_edge.length} no edge${autoOn ? " (auto-disabled)" : ""}`)}
+        ${chip("insufficient_data", `${c.insufficient_data.length} too little data`)}
+        ${c.other.length ? vbadge("", c.other.join(", "), `${c.other.length} no verdict`) : ""}
+      </div>
+      <div class="btcounts">${offChip}</div>
+      <div>${!Object.keys(per).length ? `No trades in this market's backtest.`
+        : c.proven_edge.length
+        ? `Proven edge: <b class="pos">${esc(c.proven_edge.join(", "))}</b>.`
+        : `No pattern here has a proven edge.`}</div>
+      ${isNum(t.trades) && t.trades > 0 ? `<div style="margin-top:4px">All patterns together: ${fmt(t.trades, 0)} trades,
+        <span class="${pn(t.net_avg_ret_pct)}">${sgn(t.net_avg_ret_pct, 2, "%")}</span> per trade after fees —
+        <span class="${pn(t.excess_vs_index_pct)}">${sgn(t.excess_vs_index_pct, 2, "%")}</span>
+        vs holding the index (incl. est. dividends) over the same days.</div>` : ""}
+    </div>`;
+  }).join("");
+
+  // portfolio line: System as designed X%/yr (range) vs holding the markets Y%/yr
+  let pfLine;
+  const profiles = btProfiles(pf);
+  const { system, enabled, walkForward } = btSystemProfile(profiles);
+  // the enabled-only profile left out the lists in force when the replay ran
+  const enabledDis = enabled?.disabled_patterns && typeof enabled.disabled_patterns === "object"
+    ? enabled.disabled_patterns : null;
+  const changed = btDisabledChanged(d, enabledDis);
+  const nowLists = Object.fromEntries(changed.map(m => [m, d.markets[m].currently_disabled]));
+  const blendedIdx = pf?.benchmark?.blended_index_cagr_pct;
+  const blendedUni = pf?.benchmark?.blended_universe_cagr_pct;
+  if (system && !system.error) {
+    const useHurdle = isNum(system.hurdle_index_cagr_pct);
+    const blended = useHurdle ? system.hurdle_index_cagr_pct : blendedIdx;
+    const blendLabel = useHurdle ? "exposure-weighted index" : "blended index";
+    const tb = system.tie_break_sensitivity?.cagr_pct;
+    const lo = tb && typeof tb === "object" ? tb.p5 : null, hi = tb && typeof tb === "object" ? tb.p95 : null;
+    let state = null;
+    if (isNum(lo) && isNum(hi) && isNum(blended)) state = lo > blended ? "good" : hi < blended ? "bad" : "mid";
+    else if (isNum(system.cagr_pct) && isNum(blended)) state = system.cagr_pct > blended ? "good" : "bad";  // old files
+    const cls = state === "good" ? "pos" : state === "bad" ? "neg" : pn(system.cagr_pct, 1);
+    pfLine = `<div class="btbanner ${state === "good" ? "good" : state === "bad" ? "bad" : ""}">
+      <span class="big">System as designed: <span class="${cls}">${perYr(system.cagr_pct)}</span>${isNum(lo) && isNum(hi)
+        ? ` <span class="dim" style="font-weight:400">(range ${pct(lo)}–${pct(hi)})</span>` : ""}
+        vs holding the markets: ${perYr(blended)} <span class="dim" style="font-weight:400">(${blendLabel})</span></span>
+      ${state === "mid" ? "Within the luck-of-the-draw range (which equally ranked setup got a free slot). " : ""}
+      ${isNum(system.max_drawdown_pct) ? `Worst drop along the way ${pct(system.max_drawdown_pct)} · ` : ""}${fmt(system.trades_taken, 0)} trades
+      ${useHurdle && isNum(blendedIdx) ? ` · blended index ${perYr(blendedIdx)}` : ""}
+      ${isNum(blendedUni) ? ` · equal-weight market ${perYr(blendedUni)}` : ""}
+      ${walkForward && !walkForward.error ? `<br>With auto-disable re-judged each year on earlier trades only (walk-forward${
+        walkForward.stream === "walk_forward_replay" ? ", switched-off patterns removed before the pick as the live scanner does"
+        : "; approximate: switched-off patterns' trades deleted, runner-up setups not simulated"}):
+        <b class="${pn(walkForward.cagr_pct, 1)}">${perYr(walkForward.cagr_pct)}</b>` : ""}
+      ${enabled && !enabled.error ? `<br>${changed.length
+          ? `Only the patterns enabled when the replay ran (switched off then: ${btListText(enabledDis, changed)}),`
+          : "Only the patterns enabled today,"} chosen with hindsight on the same data (in-sample):
+        <b>${perYr(enabled.cagr_pct)}</b>${isNum(enabled.hindsight_effect_pp)
+          ? ` <span class="faint" title="${esc(enabled.hindsight_basis === "deletion"
+              ? "in-sample minus walk-forward, both with the switched-off patterns' trades deleted"
+                + (isNum(enabled.selection_effect_pp) ? ` (re-selecting instead of deleting moves the in-sample figure by ${sgn(enabled.selection_effect_pp, 1, " pp")})` : "")
+              : "in-sample minus walk-forward, both re-selected (switched-off patterns removed before the pick)")}">(hindsight effect ${sgn(enabled.hindsight_effect_pp, 1, " pp")}${
+              enabled.hindsight_basis === "deletion" ? ", both approximate" : ""})</span>` : ""}${changed.length
+          ? `<br><span class="ewarn">Your config now switches off ${btListText(nowLists, changed)} —
+              re-run the backtest (or <code>python -m atlas2 portfolio</code>) to update this figure.</span>` : ""}` : ""}
+    </div>`;
+  } else if (profiles.length) {
+    pfLine = `<div class="btbanner">Portfolio simulation found, but no “System as designed” result in it.</div>`;
+  } else {
+    pfLine = `<div class="btbanner">Portfolio simulation not run for this backtest yet —
+      run <code>python -m atlas2 portfolio</code> to see the yearly return vs holding the markets.</div>`;
+  }
+  const k = nTests(d);
+  const overall = provenTotal
+    ? `${provenTotal} pattern/market combination${provenTotal > 1 ? "s show" : " shows"} an edge after fees that is statistically clear in this backtest after adjusting for ${k} pattern x market tests (still in-sample).`
+    : `No pattern shows an edge after fees that is statistically clear once all ${k} pattern x market tests are counted.`;
+  return `${pfLine}
+    <div class="btintro" style="margin-top:8px"><b>${esc(overall)}</b>
+      ${d.note ? `<span class="faint">${esc(d.note)}</span>` : ""}</div>
+    <div class="btcards">${cards}</div>`;
+}
+
+const BT_REASONS = {
+  no_bar_on_date: "no price bar on the signal day",
+  liquidity: "too little trading volume", tech_score: "weak chart (technical score under 40)",
+  regime_downtrend: "market in a downtrend", risk_reward: "reward:risk too low",
+  not_shortlisted: "not in the day's top shortlist",
+  not_grade_a: "below grade A (grade replays only)",
+  already_traded: "same pattern level already traded recently",
+  failed_before_trigger: "hit the stop before breaking out", no_breakout: "never broke out",
+  ran_away: "closed too far above the buy level",
+  gap_too_far: "opened too far above the buy level", gap_below_stop: "opened below the stop",
+  regime_downtrend_at_fill: "market turned down before the breakout",
+};
+
+function btMarketSection(md, m, mi, d) {
+  md = md || {};
+  const per = md.per_pattern || {};
+  const dis = btDisabled(md);
+  const rows = Object.entries(per).sort(([, a], [, b]) =>
+    ((VERDICT_RANK[a?.verdict] ?? 9) - (VERDICT_RANK[b?.verdict] ?? 9)) ||
+    ((isNum(b?.excess_vs_universe_pct) ? b.excess_vs_universe_pct : -1e9) -
+     (isNum(a?.excess_vs_universe_pct) ? a.excess_vs_universe_pct : -1e9)));
+  const NCOL = 12;
+  const body = rows.length ? rows.map(([p, s], pi) => btRow(pretty(p), s || {}, `bt${mi}_${pi}`, false, NCOL,
+      dis.list.includes(p) ? dis : null)).join("")
+    + (md.total ? btRow("Total", md.total, `bt${mi}_t`, true, NCOL, null) : "") : "";
+  return `<h3>${mkLabel(m)}</h3>
+    <div class="btpanel"><table class="bt pat"><thead><tr>
+      <th title="chart pattern — click a row for details">Pattern</th>
+      <th class="n" title="simulated trades (trades whose holding window would run past the end of the data are excluded)">Trades</th>
+      <th class="n" title="share of trades that made money after fees and slippage">Wins after fees</th>
+      <th class="n" title="average result in units of the risk taken (1R = buy-to-stop distance), after fees">Avg R after fees</th>
+      <th class="n" title="average % gain or loss per trade, after fees">Avg return / trade</th>
+      <th class="n" title="each trade's return after fees minus the market index's return (incl. est. dividends) over the exact same days (index held for free)">vs index</th>
+      <th class="n" title="same, against an equal-weight basket of every stock in this market; small line = 95% range">vs market (equal-weight)</th>
+      <th class="n" title="per unit of risk: avg R after fees minus holding the equal-weight market with the same position size; small line = 95% range">vs market (R)</th>
+      <th class="n" title="each trade's R after fees minus the average of random liquid, similarly volatile stocks bought on the same day with the same stop/target distances; small line = 95% range">vs random entry</th>
+      <th class="n" title="trades graded A by the grade proxy (no fundamentals): trades · avg R after fees">Grade A</th>
+      <th class="n" title="years (with at least 10 trades) in which the pattern beat the equal-weight market">Positive years</th>
+      <th title="hover or click for the reason">Verdict</th>
+    </tr></thead><tbody>${body || `<tr><td colspan="${NCOL}" class="dim">No trades.</td></tr>`}</tbody></table>
+    ${btFilters(md.filters, md.raw_total)}${btLiveConfig(md)}</div>`;
+}
+
+function btRow(name, s, id, isTotal, ncol, off) {
+  const ciU = ciText(s.excess_vs_universe_ci95, 2, "%");
+  const ciI = ciText(s.excess_vs_index_ci95, 2, "%");
+  const ciR = ciText(s.excess_vs_universe_r_ci95, 2, "R");
+  const ciX = ciText(s.edge_vs_random_r_ci95, 2, "R");
+  const years = Object.entries(s.by_year || {}).sort(([a], [b]) => a < b ? -1 : 1);
+  const yearsTitle = years.map(([y, v]) =>
+    `${y}: ${sgn(v?.excess_vs_universe_pct, 2, "%")} vs market (${fmt(v?.trades, 0)} trades)`).join("\n");
+  const posYears = isNum(s.positive_years) && isNum(s.years_counted)
+    ? `${fmt(s.positive_years, 0)}/${fmt(s.years_counted, 0)}` : "—";
+  const ga = s.by_grade?.A;
+  const atBt = s.verdict_at_backtest && s.verdict_at_backtest !== s.verdict
+    ? ` (at backtest time: ${pretty(s.verdict_at_backtest)})` : "";
+  const offTag = off ? ` <span class="vbadge no_edge" title="${esc(off.now ? "switched off in the live scanner with your current config" : "switched off in the live scanner at backtest time")}">off in scanner</span>` : "";
+  return `<tr class="row ${isTotal ? "bttotal" : ""}" id="${id}" onclick="btToggle('${id}')">
+      <td><span class="caret">▸</span>${esc(name)}</td>
+      <td class="n">${fmt(s.trades, 0)}</td>
+      <td class="n" title="${esc(`before fees: ${pct(s.gross_win_rate)}`)}">${pct(s.win_rate)}</td>
+      <td class="n ${pn(s.net_avg_r)}" title="${esc(`before fees: ${sgn(s.avg_r, 2, "R")}`)}">${sgn(s.net_avg_r, 2, "R")}</td>
+      <td class="n ${pn(s.net_avg_ret_pct)}" title="${esc(`before fees: ${sgn(s.avg_ret_pct, 2, "%")} · avg hold ${fx(s.avg_hold_bars, 1)} days`)}">${sgn(s.net_avg_ret_pct, 2, "%")}</td>
+      <td class="n ${pn(s.excess_vs_index_pct)}" title="${esc(`index incl. est. dividends over the same days: ${sgn(s.avg_index_ret_pct, 2, "%")} (price only ${sgn(s.avg_index_ret_price_pct, 2, "%")}) · beat the index in ${pct(s.beat_index_rate)} of trades${ciI ? ` · 95% range ${ciI}` : ""}`)}">${sgn(s.excess_vs_index_pct, 2, "%")}</td>
+      <td class="n ${pn(s.excess_vs_universe_pct)}" title="${esc(`equal-weight market over the same days: ${sgn(s.avg_universe_ret_pct, 2, "%")}`)}">${sgn(s.excess_vs_universe_pct, 2, "%")}${ciU ? `<span class="ci">95%: ${ciU}</span>` : ""}</td>
+      <td class="n ${pn(s.excess_vs_universe_r)}">${sgn(s.excess_vs_universe_r, 2, "R")}${ciR ? `<span class="ci">95%: ${ciR}</span>` : ""}</td>
+      <td class="n ${pn(s.edge_vs_random_r)}" title="${esc(`random entries, same days and stop/target distances: ${sgn(s.random_entry_net_avg_r, 2, "R")} after fees`)}">${sgn(s.edge_vs_random_r, 2, "R")}${ciX ? `<span class="ci">95%: ${ciX}</span>` : ""}</td>
+      <td class="n ${ga ? pn(ga.net_avg_r) : "faint"}" title="${esc(ga ? `grade A: ${fmt(ga.trades, 0)} trades, ${sgn(ga.net_avg_r, 2, "R")}, ${sgn(ga.excess_vs_universe_pct, 2, "%")} vs market` : "no grade information")}">${ga && isNum(ga.trades) && ga.trades ? `${fmt(ga.trades, 0)} · ${sgn(ga.net_avg_r, 2, "R")}` : "—"}</td>
+      <td class="n" title="${esc(yearsTitle || "no yearly breakdown")}">${posYears}</td>
+      <td>${s.verdict ? vbadge(s.verdict, (s.verdict_reason || "") + atBt) : ""}${offTag}</td>
+    </tr>
+    ${btDetail(s, id, ncol, years)}`;
+}
+
+function btDetail(s, id, ncol, years) {
+  const o = s.outcomes || {};
+  const ciR = ciText(s.net_avg_r_ci95, 2, "R");
+  const ciI = ciText(s.excess_vs_index_ci95, 2, "%");
+  const ciU = ciText(s.excess_vs_universe_ci95, 2, "%");
+  const ciXR = ciText(s.excess_vs_universe_r_ci95, 2, "R");
+  const ciRand = ciText(s.edge_vs_random_r_ci95, 2, "R");
+  const yearRows = years.map(([y, v]) => {
+    const counted = isNum(v?.trades) && v.trades >= 10;
+    return `<tr class="${counted ? "" : "faint"}"><td>${esc(y)}</td><td class="n">${fmt(v?.trades, 0)}</td>
+      <td class="n ${counted ? pn(v?.net_avg_r) : ""}">${sgn(v?.net_avg_r, 2, "R")}</td>
+      <td class="n ${counted ? pn(v?.excess_vs_universe_pct) : ""}">${sgn(v?.excess_vs_universe_pct, 2, "%")}</td></tr>`;
+  }).join("");
+  const grades = s.by_grade && typeof s.by_grade === "object"
+    ? ["A", "B", "C"].map(g => { const x = s.by_grade[g] || {};
+        return `${g}: ${fmt(x.trades, 0)} trades, ${sgn(x.net_avg_r, 2, "R")}, ${sgn(x.excess_vs_universe_pct, 2, "%")} vs market`; }).join(" · ")
+    : "";
+  return `<tr class="btdetail" id="${id}_d" hidden><td colspan="${ncol}"><div class="btdwrap">
+    ${s.verdict_reason ? `<div class="btreason">${vbadge(s.verdict, s.verdict_reason)} ${esc(s.verdict_reason)}</div>` : ""}
+    ${s.verdict_at_backtest && s.verdict_at_backtest !== s.verdict ? `<div class="faint" style="font-size:11.5px;margin-bottom:6px">At backtest time: ${esc(pretty(s.verdict_at_backtest))}${s.verdict_reason_at_backtest ? ` — ${esc(s.verdict_reason_at_backtest)}` : ""}</div>` : ""}
+    <div class="btkv">
+      <b>After fees</b><span>${pct(s.win_rate)} wins · ${sgn(s.net_avg_r, 2, "R")} per trade${ciR ? ` <span class="faint">(95%: ${ciR})</span>` : ""} · ${sgn(s.net_avg_ret_pct, 2, "%")} per trade</span>
+      <b>Before fees</b><span>${pct(s.gross_win_rate)} wins · ${sgn(s.avg_r, 2, "R")} · ${sgn(s.avg_ret_pct, 2, "%")} per trade</span>
+      <b>How trades ended</b><span>${fmt(o.target, 0)} hit the target · ${fmt(o.stop, 0)} stopped out · ${fmt(o.time, 0)} sold at the time exit · held ${fx(s.avg_hold_bars, 1)} days on average</span>
+      <b>Holding instead, same days</b><span>index incl. est. dividends ${sgn(s.avg_index_ret_pct, 2, "%")} · equal-weight market ${sgn(s.avg_universe_ret_pct, 2, "%")} (no fees charged to these)</span>
+      <b>vs index</b><span class="${pn(s.excess_vs_index_pct)}">${sgn(s.excess_vs_index_pct, 2, "%")} per trade${ciI ? ` <span class="faint">(95%: ${ciI})</span>` : ""}<span class="dim"> · beat the index in ${pct(s.beat_index_rate)} of trades</span></span>
+      <b>vs market (equal-weight)</b><span class="${pn(s.excess_vs_universe_pct)}">${sgn(s.excess_vs_universe_pct, 2, "%")} per trade${ciU ? ` <span class="faint">(95%: ${ciU})</span>` : ""}${isNum(s.gross_excess_vs_universe_pct) ? `<span class="dim"> · before fees ${sgn(s.gross_excess_vs_universe_pct, 2, "%")}</span>` : ""}</span>
+      <b>vs market per unit of risk</b><span class="${pn(s.excess_vs_universe_r)}">${sgn(s.excess_vs_universe_r, 2, "R")}${ciXR ? ` <span class="faint">(95%: ${ciXR})</span>` : ""}<span class="dim"> · vs index ${sgn(s.excess_vs_index_r, 2, "R")}</span></span>
+      <b>vs random entry</b><span>random liquid, similarly volatile stocks bought on the same days with the same stop/target distances made
+        ${sgn(s.random_entry_net_avg_r, 2, "R")} after fees → pattern edge <span class="${pn(s.edge_vs_random_r)}">${sgn(s.edge_vs_random_r, 2, "R")}</span>${ciRand ? ` <span class="faint">(95%: ${ciRand})</span>` : ""}</span>
+      ${grades ? `<b>By grade (proxy)</b><span>${esc(grades)}</span>` : ""}
+    </div>
+    ${yearRows ? `<table class="btyears"><thead><tr><th>Year</th><th class="n">Trades</th>
+      <th class="n">Avg R after fees</th><th class="n">vs market</th></tr></thead><tbody>${yearRows}</tbody></table>
+      <div class="faint" style="font-size:11px;margin-top:4px">Greyed years have fewer than 10 trades and
+        don't count toward “positive years”.</div>` : ""}
+  </div></td></tr>`;
+}
+
+function btToggle(id) {
+  const d = el(id + "_d"); if (!d) return;
+  d.hidden = !d.hidden;
+  el(id)?.classList.toggle("open", !d.hidden);
+}
+
+function btFilters(f, raw) {
+  const parts = [];
+  if (f && typeof f === "object") {
+    const removed = Object.entries(f.removed || {}).filter(([, n]) => isNum(n) && n > 0)
+      .sort((a, b) => b[1] - a[1]);
+    if (isNum(f.signals_evaluated)) parts.push(`${fmt(f.signals_evaluated, 0)} signals checked`);
+    if (removed.length) parts.push(`filtered out: ${removed.map(([k, n]) =>
+      `${esc(BT_REASONS[k] ?? pretty(k))} ${fmt(n, 0)}`).join(", ")}`);
+    if (isNum(f.no_pattern) && f.no_pattern) parts.push(`${fmt(f.no_pattern, 0)} with no pattern on the chart`);
+    if (isNum(f.orders_not_filled_today) && f.orders_not_filled_today)
+      parts.push(`${fmt(f.orders_not_filled_today, 0)} one-day buy-stops not filled (re-checked the next day)`);
+    const cens = f.censored_at_end ?? f.open_at_end;
+    if (isNum(cens) && cens) parts.push(`${fmt(cens, 0)} entered within max_hold bars of the data end (excluded, whatever the outcome)`);
+    if (isNum(f.baseline_missing) && f.baseline_missing) parts.push(`${fmt(f.baseline_missing, 0)} without market data for the comparison`);
+    if (isNum(f.detector_exceptions) && f.detector_exceptions) parts.push(`${fmt(f.detector_exceptions, 0)} pattern-detector errors`);
+    const pa = f.price_artifacts && typeof f.price_artifacts === "object" ? Object.entries(f.price_artifacts).filter(([, n]) => isNum(n) && n > 0) : [];
+    if (pa.length) parts.push(`price data repaired: ${pa.map(([k, n]) => `${esc(pretty(k))} ${fmt(n, 0)}`).join(", ")}`);
+    const fb = (f.random_pool_fallback || 0) + (f.random_pool_unmatched || 0);
+    if (isNum(fb) && fb) parts.push(`${fmt(fb, 0)} random baselines drawn from a wider pool (too few similar stocks)`);
+  }
+  const rawLine = raw && typeof raw === "object" ? `<div style="margin-top:3px">Without the scanner's
+    filters (old selection logic): ${fmt(raw.trades, 0)} trades, ${pct(raw.win_rate)} wins,
+    <span class="${pn(raw.net_avg_r)}">${sgn(raw.net_avg_r, 2, "R")}</span> and
+    <span class="${pn(raw.net_avg_ret_pct)}">${sgn(raw.net_avg_ret_pct, 2, "%")}</span> per trade after fees
+    <span>(${sgn(raw.avg_r, 2, "R")} before fees)</span>.</div>` : "";
+  if (!parts.length && !rawLine) return "";
+  return `<div class="btfoot">${parts.join(" · ")}${rawLine}</div>`;
+}
+
+/* replay with the patterns switched off at backtest time removed before the pick
+   (informational); flags a config that now switches off a different set */
+function btLiveConfig(md) {
+  const lc = md?.live_config;
+  if (!lc || !Array.isArray(lc.disabled) || !lc.disabled.length) return "";
+  const now = md.currently_disabled;
+  const differs = Array.isArray(now) && JSON.stringify(btSorted(lc.disabled)) !== JSON.stringify(btSorted(now));
+  const per = lc.per_pattern && typeof lc.per_pattern === "object" ? lc.per_pattern : {};
+  const head = md.per_pattern || {};
+  const rows = Object.entries(per).map(([p, s]) => {
+    const h = head[p] || {};
+    return `<tr><td>${esc(pretty(p))}</td><td class="n">${fmt(s?.trades, 0)}</td>
+      <td class="n ${pn(s?.net_avg_r)}">${sgn(s?.net_avg_r, 2, "R")}</td>
+      <td class="n ${pn(s?.excess_vs_universe_pct)}">${sgn(s?.excess_vs_universe_pct, 2, "%")}</td>
+      <td class="n dim">${fmt(h.trades, 0)} · ${sgn(h.net_avg_r, 2, "R")}</td></tr>`;
+  }).join("");
+  const t = lc.total || {};
+  return `<div class="btfoot"><details><summary>Replay without ${esc(lc.disabled.map(pretty).join(", "))}
+      (switched off at backtest time; ${esc(lc.label || "in-sample selection")}, informational only)${differs
+        ? ` <span class="ewarn">your config now switches off ${btSorted(now).length ? esc(btSorted(now).map(pretty).join(", ")) : "none"}</span>` : ""}</summary>
+    ${differs ? `<div class="ewarn" style="margin:4px 0">This replay used the list in force when the backtest ran;
+      your config now switches off ${btSorted(now).length ? esc(btSorted(now).map(pretty).join(", ")) : "nothing"}.
+      Re-run the backtest to replay the current list.</div>` : ""}
+    <div style="margin:4px 0">${esc(lc.note || "")} ${esc(lc.rule ? `Rule: ${lc.rule}.` : "")}
+      Together: ${fmt(t.trades, 0)} trades, <span class="${pn(t.net_avg_r)}">${sgn(t.net_avg_r, 2, "R")}</span>,
+      <span class="${pn(t.excess_vs_universe_pct)}">${sgn(t.excess_vs_universe_pct, 2, "%")}</span> vs market.</div>
+    ${rows ? `<table class="btyears"><thead><tr><th>Pattern</th><th class="n">Trades</th><th class="n">Avg R after fees</th>
+      <th class="n">vs market</th><th class="n" title="trades · avg R in the headline table (best pattern picked among all)">headline</th></tr></thead>
+      <tbody>${rows}</tbody></table>` : ""}</details></div>`;
+}
+
+function btPortfolio(pf, d) {
+  const profiles = btProfiles(pf);
+  if (!profiles.length) return "";
+  const bench = pf.benchmark || {};
+  const blended = bench.blended_index_cagr_pct;
+  const { system, enabled, walkForward } = btSystemProfile(profiles);
+  const q = (x) => x && typeof x === "object" && isNum(x.p5) && isNum(x.p95) ? x : null;
+  const prow = p => {
+    const vs = isNum(p.vs_blended_index_cagr_pp) ? p.vs_blended_index_cagr_pp
+      : isNum(p.cagr_pct) && isNum(blended) ? p.cagr_pct - blended : null;
+    const title = [isNum(p.risk_pct) ? `${fmt(p.risk_pct, 2)}% risk per trade` : "",
+      isNum(p.final_equity) ? `account ends at ${fmt(p.final_equity, 0)}` : "",
+      isNum(p.years) ? `over ${fx(p.years, 1)} years` : "",
+      isNum(p.representative_tie_seed) ? `median of the slot orderings (seed ${p.representative_tie_seed}; seed-0 path ${pct(p.seed0_cagr_pct)})` : "",
+      isNum(p.pct_positions_capped) && p.pct_positions_capped ? `${fx(p.pct_positions_capped, 1)}% of positions hit the ${fmt(p.max_position_pct, 0)}% cap` : "",
+      p.note ? String(p.note) : ""].filter(Boolean).join(" · ");
+    const tb = p.tie_break_sensitivity || {};
+    const qc = q(tb.cagr_pct), qd = q(tb.max_drawdown_pct), qv = q(tb.vs_blended_index_cagr_pp);
+    const tie = qc ? null : btTieRange(p);
+    const ddTitle = `${p.drawdown_basis ? `${p.drawdown_basis}` : ""}${isNum(p.max_drawdown_realized_pct) ? ` · closed trades only: ${pct(p.max_drawdown_realized_pct)}` : ""}`;
+    return `<tr class="${p === system ? "btsys" : ""}" title="${esc(title)}">
+      <td>${esc(p.label ?? "profile")}${p.error ? `<span class="ci">${esc(p.error)}</span>` : ""}</td>
+      <td class="n ${pn(p.cagr_pct, 1)}">${perYr(p.cagr_pct)}${qc ? `<span class="ci" title="5th-95th percentile over ${fmt(tb.runs, 0)} slot orderings">${pct(qc.p5)}–${pct(qc.p95)}</span>` : tie ? `<span class="ci" title="yearly return when equally ranked setups compete for a slot in a different (reshuffled) order">luck: ${tie}</span>` : ""}</td>
+      <td class="n neg" title="${esc(ddTitle)}">${pct(p.max_drawdown_pct)}${qd ? `<span class="ci" title="closed trades, 5th-95th percentile">${pct(qd.p5)}–${pct(qd.p95)}</span>` : ""}</td>
+      <td class="n">${fmt(p.trades_taken, 0)}</td>
+      <td class="n">${pct(p.win_rate)}</td>
+      <td class="n" title="average share of the account invested (marked to market)">${pct(p.avg_gross_exposure_pct)}</td>
+      <td class="n ${pn(vs, 1)}">${sgn(vs, 1, " pp")}${qv ? `<span class="ci">${sgn(qv.p5, 1, "")}–${sgn(qv.p95, 1, " pp")}</span>` : ""}</td>
+      <td class="n ${pn(p.vs_hurdle_index_cagr_pp, 1)}" title="${esc(isNum(p.hurdle_index_cagr_pct) ? `this profile's exposure-weighted index: ${perYr(p.hurdle_index_cagr_pct)}` : "")}">${sgn(p.vs_hurdle_index_cagr_pp, 1, " pp")}</td></tr>`;
+  };
+  const bm = btBenchMarkets(bench);
+  const bmKeys = btMarkets(bm);
+  const brow = m => {
+    const b = bm[m] || {};
+    return `<tr${b.error ? ` title="${esc(b.error)}"` : ""}><td>${mkLabel(m)}${b.error ? ` <span class="ewarn">no data</span>` : ""}</td><td class="dim">${esc(b.index_ticker ?? b.index ?? b.ticker ?? "—")}</td>
+      <td class="n ${pn(b.index_cagr_pct, 1)}" title="${esc(isNum(b.index_cagr_price_pct) ? `price only: ${perYr(b.index_cagr_price_pct)}` : "")}">${perYr(b.index_cagr_pct)}</td>
+      <td class="n neg">${pct(b.index_max_drawdown_pct)}</td>
+      <td class="n ${pn(b.universe_equal_weight_cagr_pct, 1)}">${perYr(b.universe_equal_weight_cagr_pct)}</td></tr>`;
+  };
+  // what the enabled-only profile actually left out (the config when the replay ran),
+  // never the scanner's current lists, which can differ after a config change
+  const dis = enabled?.disabled_patterns && typeof enabled.disabled_patterns === "object"
+    ? btMarkets(enabled.disabled_patterns).map(m => {
+        const list = enabled.disabled_patterns[m];
+        return `${mkLabel(m)}: ${Array.isArray(list) && list.length ? esc(list.map(pretty).join(", ")) : "none"}`;
+      }).join(" · ") : "";
+  const enabledNote = enabled && (enabled.note || dis) ? `<div style="margin-top:3px">“Enabled patterns only”
+    leaves out the patterns the live scanner switched off when the portfolio replay ran${dis ? ` — ${dis}` : ""}.
+    ${enabled.note ? esc(String(enabled.note).charAt(0).toUpperCase() + String(enabled.note).slice(1)) : ""}</div>` : "";
+  const win = bench.window ?? bench.period ?? pf.window;
+  const winText = win && typeof win === "object"
+    ? Object.values(win).map(esc).join(" → ") : win ? esc(win)
+    : bench.start || bench.end ? `${esc(bench.start ?? "?")} → ${esc(bench.end ?? "?")}` : "";
+  // year-by-year: system, walk-forward, enabled-only vs each market's index
+  const years = new Set();
+  for (const p of [system, walkForward, enabled]) Object.keys(p?.yearly_return_pct || {}).forEach(y => years.add(y));
+  for (const m of bmKeys) Object.keys(bm[m]?.index_yearly_pct || {}).forEach(y => years.add(y));
+  const blendY = bench.blended_index_yearly_pct && typeof bench.blended_index_yearly_pct === "object"
+    ? bench.blended_index_yearly_pct : null;
+  const ylist = [...years].sort();
+  const ycell = (p, y) => `<td class="n ${pn(p.yearly_return_pct?.[y], 1)}">${sgn(p.yearly_return_pct?.[y], 1, "%")}</td>`;
+  const yearTable = ylist.length ? `<details><summary>Year by year (first and last years are partial)</summary>
+    <div class="btpanel"><table class="bt narrow"><thead><tr><th>Year</th>
+      ${system ? `<th class="n" title="booked by exit year">System as designed (by exit year)</th>` : ""}
+      ${walkForward && !walkForward.error ? `<th class="n" title="auto-disable re-judged each year on earlier trades only">Walk-forward</th>` : ""}
+      ${enabled && !enabled.error ? `<th class="n" title="in-sample pattern selection (chosen with hindsight on the same data)">Enabled patterns only (in-sample)</th>` : ""}
+      ${bmKeys.map(m => `<th class="n" title="incl. est. dividends; equal-weight market in the tooltip of each cell">${mkLabel(m)} index</th>`).join("")}
+      ${blendY ? `<th class="n" title="the market indices held 1/3 each, rebalanced monthly">Blended index</th>` : ""}
+    </tr></thead><tbody>${ylist.map(y => `<tr><td>${esc(y)}</td>
+      ${system ? ycell(system, y) : ""}
+      ${walkForward && !walkForward.error ? ycell(walkForward, y) : ""}
+      ${enabled && !enabled.error ? ycell(enabled, y) : ""}
+      ${bmKeys.map(m => `<td class="n ${pn(bm[m]?.index_yearly_pct?.[y], 1)}"
+        title="${esc(`equal-weight market: ${sgn(bm[m]?.universe_yearly_pct?.[y], 1, "%")}`)}">${sgn(bm[m]?.index_yearly_pct?.[y], 1, "%")}</td>`).join("")}
+      ${blendY ? `<td class="n ${pn(blendY[y], 1)}">${sgn(blendY[y], 1, "%")}</td>` : ""}
+    </tr>`).join("")}</tbody></table></div></details>` : "";
+  const asList = v => Array.isArray(v) ? v : v ? [v] : [];
+  const notes = [...asList(pf.notes), ...asList(bench.notes)];
+  const ref = pf.reference_pre_costs && typeof pf.reference_pre_costs === "object" ? pf.reference_pre_costs : null;
+  return `<h3>Portfolio simulation — one account, all markets</h3>
+    <div class="btpanel"><table class="bt narrow pf"><thead><tr>
+      <th title="position-sizing profile">Profile</th>
+      <th class="n" title="compound yearly growth of the account (median slot ordering; small line = 5th-95th percentile)">Yearly return</th>
+      <th class="n" title="biggest peak-to-bottom fall of the account, marked to market daily (small line: closed trades, 5th-95th percentile)">Max drawdown</th>
+      <th class="n">Trades</th><th class="n" title="after fees">Win rate</th>
+      <th class="n" title="average share of the account invested">Invested</th>
+      <th class="n" title="yearly return minus the blended index's yearly return, in percentage points">vs blended index</th>
+      <th class="n" title="yearly return minus an index portfolio weighted like this profile's own market exposure">vs exposure-weighted index</th>
+    </tr></thead><tbody>${profiles.map(prow).join("")}</tbody></table>
+    <div class="btfoot">${fmt(pf.source_trades, 0)} backtest trades fed in${winText ? ` · window ${winText}` : ""}
+      ${pf.generated ? ` · simulated ${btDate(pf.generated)}` : ""}${enabledNote}
+      ${ref ? (() => {
+        const rq = ref.tie_break_cagr_pct && typeof ref.tie_break_cagr_pct === "object" ? ref.tie_break_cagr_pct : null;
+        return `<div style="margin-top:3px">Old pre-fees trade stream on this simulator: ${perYr(ref.cagr_pct)}
+        ${rq && isNum(rq.p5) && isNum(rq.p95)
+          ? `(${esc(ref.cagr_basis || "median slot ordering")}; p5–p95 ${pct(rq.p5)}–${pct(rq.p95)}, highest ${pct(rq.max)};`
+          : `(single slot ordering;`}
+        closed-trade drawdown ${pct(ref.max_drawdown_pct)}, ${fmt(ref.trades_taken, 0)} trades) — the old replay showed 7.7%/yr from one ordering.</div>`;
+      })() : ""}</div></div>
+    ${bmKeys.length || isNum(blended) ? `<h3>Holding the market instead (same window)</h3>
+    <div class="btpanel"><table class="bt narrow"><thead><tr>
+      <th>Market</th><th title="benchmark index">Index</th>
+      <th class="n" title="yearly return of the index incl. estimated dividends (price index + yield for US and India)">Index yearly return</th>
+      <th class="n" title="biggest daily peak-to-bottom fall of the index">Index max drawdown</th>
+      <th class="n" title="yearly return of an equal-weight basket of every stock in the universe">Equal-weight market</th>
+    </tr></thead><tbody>${bmKeys.map(brow).join("")}
+      <tr class="bttotal"><td>Blended (1/3 each, rebalanced monthly)</td><td></td>
+        <td class="n ${pn(blended, 1)}">${perYr(blended)}</td><td></td>
+        <td class="n ${pn(bench.blended_universe_cagr_pct, 1)}">${perYr(bench.blended_universe_cagr_pct)}</td></tr>
+    </tbody></table></div>` : ""}
+    ${yearTable}
+    ${notes.length ? `<ul class="caveats">${notes.map(n => `<li>${esc(n)}</li>`).join("")}</ul>` : ""}`;
+}
+
+function btMethod(d) {
+  const m = { ...(d.method && typeof d.method === "object" ? d.method : {}) };
+  const take = k => { const v = m[k]; delete m[k]; return v; };
+  const rows = [];
+  const perMkt = (v, f) => v && typeof v === "object"
+    ? btMarkets(v).map(k => isNum(v[k]) ? `${mkLabel(k)} ${f(v[k])}` : `${mkLabel(k)} ${kv(v[k])}`).join(" · ")
+    : isNum(v) ? f(v) : kv(v);
+  const costs = take("costs_pct_per_side");
+  if (costs != null)
+    rows.push(["Fees + spread per side", perMkt(costs, x => `${fx(x, 2)}% <span class="faint">(${fx(x * 2, 2)}% round trip)</span>`)]);
+  const slip = take("stop_slippage_pct");
+  if (slip != null) rows.push(["Extra slippage on stop-loss exits", perMkt(slip, x => `${fx(x, 2)}%`)]);
+  const eslip = take("entry_slippage_pct");
+  if (eslip != null) rows.push(["Extra slippage on buy-stop entries", perMkt(eslip, x => `${fx(x, 2)}%`)]);
+  const dy = take("index_dividend_yield_pct");
+  if (dy != null) rows.push(["Estimated index dividend yield", perMkt(dy, x => `${fx(x, 1)}%/yr`)]);
+  const settings = take("settings");
+  const S = { ...(settings && typeof settings === "object" ? settings : {}) };
+  for (const k of ["step", "window", "breakout_wait", "max_hold", "max_gap_above_entry_pct"])
+    if (k in m) S[k] = take(k);
+  const SL = {
+    step: n => n === 1 ? "signals checked every trading day, like the live scanner"
+      : `signals checked every ${fmt(n, 0)} trading days (the live scanner runs daily)`,
+    window: n => `pattern look-back ${fmt(n, 0)} days`,
+    breakout_wait: n => n === 1 ? "a forming setup gets a one-day buy-stop (re-detected the next day)"
+      : `waits up to ${fmt(n, 0)} days for the breakout`,
+    max_hold: n => `sells at the close after ${fmt(n, 0)} days if neither stop nor target was hit`,
+    max_gap_above_entry_pct: n => `skips the trade if it opens more than ${fmt(n, 2)}% above the buy level`,
+    min_risk_reward: n => `needs reward:risk of at least ${fmt(n, 2)}`,
+    tech_score_min: n => `technical score at least ${fmt(n, 0)}`,
+    shortlist_size: n => `only the top ${fmt(n, 0)} candidates per day (the live shortlist)`,
+  };
+  const sparts = Object.entries(S).filter(([, v]) => v != null).map(([k, v]) =>
+    k === "regime_filter" && typeof v === "boolean"
+      ? (v ? "no new trades while the market is in a downtrend" : "no market-regime filter")
+      : k === "seen_on_fill_only" && typeof v === "boolean"
+      ? (v ? "only a filled trade blocks its pattern level" : "any attempted order blocks its pattern level (legacy)")
+      : k === "entry_mode" ? (v === "close_confirm" ? "buys at the next open after a close above the entry" : "buy-stop entries")
+      : SL[k] && isNum(v) ? SL[k](v) : `${esc(pretty(k))}: ${kv(v)}`);
+  if (sparts.length) rows.push(["Simulation", sparts.join(" · ")]);
+  const rnd = take("random_entries_per_trade");
+  if (rnd != null) rows.push(["Random entries per trade", kv(rnd)]);
+  const filters = take("filters") ?? take("filters_applied");
+  if (filters != null) rows.push(["Scanner filters applied", listOrKv(filters)]);
+  const bl = take("baselines");
+  if (bl != null) rows.push(["Baselines", listOrKv(bl)]);
+  const stats = take("stats") ?? take("stats_method") ?? take("statistics");
+  if (stats != null) rows.push(["Statistics", listOrKv(stats)]);
+  const period = take("period");
+  if (period && typeof period === "object")
+    rows.push(["Period", btMarkets(period).map(k => {
+      const p = period[k];
+      return p && typeof p === "object" && ("first_entry" in p || "last_exit" in p)
+        ? `${mkLabel(k)} ${esc(p.first_entry ?? "?")} → ${esc(p.last_exit ?? "?")}`
+        : `${mkLabel(k)} ${kv(p)}`;
+    }).join(" · ")]);
+  else if (period != null) rows.push(["Period", kv(period)]);
+  const uni = take("universe_sizes") ?? take("universe_size") ?? take("universe");
+  if (uni != null) rows.push(["Stocks in each universe", uni && typeof uni === "object"
+    ? btMarkets(uni).map(k => {
+        const u = uni[k];
+        return u && typeof u === "object" && isNum(u.tickers)
+          ? `${mkLabel(k)} ${fmt(u.simulated ?? u.run ?? u.tickers, 0)} of ${fmt(u.tickers, 0)} simulated`
+          : `${mkLabel(k)} ${kv(u)}`;
+      }).join(" · ") : kv(uni)]);
+  const carried = take("carried_over");
+  const keptDiff = take("kept_with_different_settings");
+  const kd = Array.isArray(keptDiff) ? keptDiff : [];
+  if (carried && typeof carried === "object" && Object.keys(carried).length)
+    rows.push(["Kept from an earlier run", btMarkets(carried).map(k => `${mkLabel(k)} (${btDate(carried[k])})${
+      kd.includes(k) ? ` <span class="vbadge no_edge">DIFFERENT settings (--keep-others)</span>` : ""}`).join(" · ")]);
+  // per-market settings: list only what differs from this run's settings above
+  const sbm = take("settings_by_market");
+  if (sbm && typeof sbm === "object") {
+    const diffs = btMarkets(sbm).map(k => {
+      const ms = sbm[k] && typeof sbm[k] === "object" ? sbm[k] : {};
+      const d = Object.entries(ms).filter(([n, v]) => n in S && JSON.stringify(S[n]) !== JSON.stringify(v))
+        .map(([n, v]) => `${esc(pretty(n))} ${kv(v)} <span class="faint">(this run: ${kv(S[n])})</span>`);
+      return d.length ? `${mkLabel(k)}: ${d.join(", ")}` : "";
+    }).filter(Boolean);
+    if (diffs.length) rows.push(["Markets computed with other settings", diffs.join(" · ")]);
+  }
+  const dq = take("data_quality");
+  if (dq && typeof dq === "object") {
+    const all = btMarkets(dq).flatMap(k => (Array.isArray(dq[k]) ? dq[k] : []).map(e => [k, e]));
+    if (all.length) rows.push(["Price data repaired (backtest only)", `<details><summary>${fmt(all.length, 0)} fixes</summary>
+      <ul class="btlist">${all.map(([k, e]) => `<li>${mkLabel(k)} ${esc(Array.isArray(e) ? e.map(x => pretty(x)).join(" · ") : kv(e))}</li>`).join("")}</ul></details>`]);
+  }
+  const variant = take("variant");
+  if (Array.isArray(variant) && variant.length) rows.push(["Variant", esc(variant.map(pretty).join(", "))]);
+  for (const [k, v] of Object.entries(m)) if (v != null) rows.push([esc(pretty(k)), listOrKv(v)]);
+  const caveats = Array.isArray(d.caveats) ? d.caveats : d.caveats ? [d.caveats] : [];
+  return `<h3>Method</h3>
+    <div class="btpanel pad"><div class="btkv">
+      ${rows.map(([k, v]) => `<b>${k}</b><span>${v}</span>`).join("") || `<span class="dim">No method details in the file.</span>`}
+    </div></div>
+    ${caveats.length ? `<h3>Caveats — read before trusting any number</h3>
+      <ul class="caveats">${caveats.map(c => `<li>${esc(c)}</li>`).join("")}</ul>` : ""}
+    <div class="faint" style="font-size:11px;margin-top:12px">Backtest generated ${btDate(d.generated)}
+      · file format v${esc(d.version)} · past results do not guarantee future ones.
+      Re-run with <code>python -m atlas2 backtest</code>.</div>`;
 }
 
 document.addEventListener("click", e => {

@@ -5,12 +5,48 @@
   "max_position_pct": 25.0,
   "shortlist_size": 45,
   "markets": ["us", "de", "in"],
+  "regime_filter": true,
   "dividend_max_age_days": 3,
   "pattern_tuning": {
     "auto_disable": true,
+    "require_proven_edge": false,
     "min_avg_r": 0.0,
     "min_trades": 30,
+    "family_alpha": 0.05,
+    "n_tests": null,
     "disabled": { "us": [], "de": [], "in": [] }
+  },
+  "backtest": {
+    "costs_pct_per_side": { "us": 0.15, "de": 0.10, "in": 0.20 },
+    "stop_slippage_pct": { "us": 0.05, "de": 0.15, "in": 0.15 },
+    "entry_slippage_pct": { "us": 0.05, "de": 0.15, "in": 0.15 },
+    "index_dividend_yield_pct": { "us": 1.5, "de": 0.0, "in": 1.3 },
+    "random_entries_per_trade": 10,
+    "step": 1,
+    "window": 170,
+    "breakout_wait": 1,
+    "max_hold": 40,
+    "max_gap_above_entry_pct": 3.0,
+    "entry_mode": "buy_stop",
+    "seen_on_fill_only": true,
+    "price_artifacts": [
+      { "ticker": "VEDL.NS", "date": "2026-04-30", "action": "adjust", "ratio": 0.374224, "note": "demerger" },
+      { "ticker": "TMPV.NS", "date": "2025-10-14", "action": "adjust", "ratio": 0.605372, "note": "demerger" },
+      { "ticker": "TRENT.NS", "date": "2026-01-01", "action": "adjust", "ratio": 0.666667, "note": "exact 2/3 open without a volume surge" }
+    ]
+  },
+  "_comments": {
+    "shortlist_size": "the live scanner keeps the top N candidates per market (confidence x 50 + technical score); the backtest simulates the same cut",
+    "pattern_tuning.family_alpha": "chance of at least one false 'proven edge' across all pattern x market cells (two-sided, Bonferroni)",
+    "pattern_tuning.n_tests": "null = number of bullish patterns x 3 markets (18); set 1 for the unadjusted 95% rule",
+    "backtest.stop_slippage_pct / entry_slippage_pct": "extra slippage on stop-loss exits and buy-stop entries (market orders once triggered); a single number applies to every market",
+    "backtest.index_dividend_yield_pct": "estimated yield added to the price-index baseline (^GSPC, ^NSEI); de = 0 because ^GDAXI is a performance index. Changing it needs a backtest re-run",
+    "backtest.step / breakout_wait": "1 / 1 = replay every trading day with a one-day buy-stop, like the 07:30 scan; the old grid was 5 / 15 (python -m atlas2 backtest --legacy-grid)",
+    "backtest.window": "pattern look-back, at least 144 bars (cup-and-handle needs a 140-bar base)",
+    "backtest.max_hold": "time exit: sell at the close of the Nth trading day after the fill if neither stop nor target was hit; the backtest numbers assume you do this",
+    "backtest.entry_mode": "buy_stop (default) or close_confirm (buy at the next open after a close above the entry)",
+    "backtest.seen_on_fill_only": "true = only a filled trade blocks its pattern level for 'window' bars",
+    "backtest.price_artifacts": "corporate actions the free data leaves unadjusted (backtest only; actions: adjust with ratio, drop_bar, truncate). More can go in data/price_artifacts.json"
   },
   "dashboard_password": "change-me-or-remove-for-no-login"
 }
