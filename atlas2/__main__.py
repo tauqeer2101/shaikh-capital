@@ -19,6 +19,12 @@ Commands:
                       --legacy-grid (every 5 days, 15-day buy-stop) and
                       --entry-mode write labelled files, never the headline.
   portfolio           replay the backtest trades as one account
+  exit-experiment [--limit N] [--out PATH] [--trades PATH] [--workers N]
+                      pre-registered exit experiment on the backtest's entries
+                      (9 stop x exit variants, train/test split); --limit N =
+                      smoke run on the first N entries, written to --out
+                      (default data/exit_experiment_smoke.json), never the
+                      real data/exit_experiment.json.
 """
 from __future__ import annotations
 
@@ -128,6 +134,10 @@ def main() -> None:
         from .portfolio_sim import run_portfolio_report
 
         run_portfolio_report()
+    elif cmd == "exit-experiment":
+        from .exit_experiment import main as exit_experiment_main
+
+        exit_experiment_main(args[1:])
     elif cmd == "monitor":
         from .monitor import run_monitor
 

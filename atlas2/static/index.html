@@ -447,8 +447,9 @@ async function loadOverview() {
     const d = await (await fetch("/api/scans")).json();
     el("overview").innerHTML = Object.entries(d).map(([m, s]) => `
       <div class="ov" onclick="switchMarket('${m}')">
-        <div class="mkt">${FLAG[m]} ${MARKETS[m].split(" ").slice(1).join(" ")}
-          <span class="chip ${s.regime}">${REGIME_ICON[s.regime] ?? ""} ${s.regime}</span></div>
+        <div class="mkt">${FLAG[m] ?? (MARKETS[m] || m).split(" ")[0]} ${(MARKETS[m] || m).split(" ").slice(1).join(" ")}
+          ${s.regime && s.regime !== "unknown"
+            ? `<span class="chip ${s.regime}">${REGIME_ICON[s.regime] ?? ""} ${s.regime}</span>` : ""}</div>
         <div class="nums">
           <span><b>${s.setups}</b> setups</span>
           <span><b>${s.a_grades}</b> A-grade</span>
