@@ -7,6 +7,7 @@
   "markets": ["us", "de", "in"],
   "regime_filter": true,
   "dividend_max_age_days": 3,
+  "max_per_sector": 2,
   "pattern_tuning": {
     "auto_disable": true,
     "require_proven_edge": false,
@@ -37,6 +38,7 @@
   },
   "_comments": {
     "shortlist_size": "the live scanner keeps the top N candidates per market (confidence x 50 + technical score); the backtest simulates the same cut",
+    "max_per_sector": "sector cap: at most this many setups per sector and market make the active list each day; the rest stay listed, greyed out as 'sector full'. 0 or null = no cap. Also the threshold for the journal's sector-concentration warning",
     "pattern_tuning.family_alpha": "chance of at least one false 'proven edge' across all pattern x market cells (two-sided, Bonferroni)",
     "pattern_tuning.n_tests": "null = number of bullish patterns x 3 markets (18); set 1 for the unadjusted 95% rule",
     "backtest.stop_slippage_pct / entry_slippage_pct": "extra slippage on stop-loss exits and buy-stop entries (market orders once triggered); a single number applies to every market",
