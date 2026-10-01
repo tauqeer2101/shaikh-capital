@@ -1,6 +1,8 @@
 """Price-alert monitor: python -m atlas2 monitor
 
-Checks (a) open journal positions against their stop and target, (b) the
+Checks (a) open journal positions against their stop and target - a hit stop
+is an EXIT instruction, not a hint to review (the backtest's stops are hit about
+half the time, so this has to be unmistakable), (b) the
 time exit of open positions (a reminder on the morning of the last allowed
 trading day - the backtest sells at that day's close if neither stop nor
 target was hit - and every day after it while the position is still open), and
@@ -181,6 +183,69 @@ def time_exit_checks(open_trades: list[dict], today: date, default_max_hold: int
     return out
 
 
+def _minus(x: float, nd: int) -> str:
+    """Signed percentage with a real minus sign, e.g. '−5.3%' / '+2.0%'."""
+    return f"{round(float(x), nd) + 0.0:+.{nd}f}%".replace("-", "−")
+
+
+def _num(x: float) -> str:
+    """A price with up to four decimals and no trailing zeros. `:g` would round a
+    six-figure price (MRF.NS trades above 100000) to whole units."""
+    return f"{float(x):.4f}".rstrip("0").rstrip(".")
+
+
+def stop_message(trade: dict, price: float) -> str:
+    """The instruction for a position whose price is at or below its stop. The
+    percentage is the stop's distance from the entry - the loss the plan accepted."""
+    entry, stop = float(trade["entry_price"]), float(trade["stop"])
+    price = round(float(price), 4)   # what the alert record carries; drops float32 noise
+    shown_price, shown_stop = _num(price), _num(stop)
+    where = "at" if shown_price == shown_stop else "below"   # the word matches the numbers
+    planned = (f" ({_minus((stop / entry - 1) * 100, 1)} from entry {_num(entry)})"
+               if entry > 0 else "")
+    return (f"{trade['ticker']}: STOP HIT — sell now. Price {shown_price} is {where} your stop "
+            f"{shown_stop}{planned}. The plan was to exit here; every day held past the stop is "
+            "outside the plan.")
+
+
+def days_past_stop(ticker: str, level: float, entry_date: str, today: date,
+                   log_path: Path | None = None) -> int | None:
+    """Calendar days since the FIRST stop alert for this position - the alerts in
+    the log with the same ticker and stop level, dated on or after the entry.
+    None when the log has no such alert yet (the position is new to the stop)."""
+    path = Path(log_path) if log_path else LOG_PATH
+    if not path.exists():
+        return None
+    entry = str(entry_date or "")[:10]
+    first: str | None = None
+    try:
+        for line in path.read_text().splitlines():
+            if not line.strip():
+                continue
+            try:
+                a = json.loads(line)
+            except ValueError:
+                continue
+            if a.get("kind") != "stop" or a.get("ticker") != ticker:
+                continue
+            lvl = a.get("level")
+            if not isinstance(lvl, (int, float)) or abs(float(lvl) - float(level)) > 1e-6:
+                continue
+            day = str(a.get("time") or "")[:10]
+            if len(day) != 10 or day < entry:
+                continue
+            if first is None or day < first:
+                first = day
+    except OSError:
+        return None
+    if first is None:
+        return None
+    try:
+        return max(0, (today - date.fromisoformat(first)).days)
+    except ValueError:
+        return None
+
+
 def _load_state() -> dict:
     if STATE_PATH.exists():
         try:
@@ -201,24 +266,27 @@ def run_monitor(force: bool = False, progress=print) -> list[dict]:
     fired: set[str] = set(state["fired"])
     alerts: list[dict] = []
 
-    checks = []  # (key, ticker, kind, level, message-template data)
+    checks = []  # (kind, ticker, level, message, trade) - the stop message is built
+    #              once the price is known (trade is None for target / entry)
     journal = Journal(ROOT / "data" / "journal.sqlite3")
     open_trades = [t for t in journal.all_trades() if t["exit_price"] is None]
     journal.close()
     for t in open_trades:
-        checks.append(("stop", t["ticker"], t["stop"],
-                       f"{t['ticker']}: price at/below your stop {t['stop']:g} - review position"))
+        checks.append(("stop", t["ticker"], t["stop"], None, t))
         if t.get("target"):
             checks.append(("target", t["ticker"], t["target"],
-                           f"{t['ticker']}: target {t['target']:g} reached - consider taking profit"))
+                           f"{t['ticker']}: target {t['target']:g} reached - consider taking profit",
+                           None))
 
     for market in ("us", "de", "in", "comeback"):
         path = ROOT / "data" / "scans" / f"{market}_latest.json"
         if not path.exists():
             continue
         scan = json.loads(path.read_text())
+        # sector-capped setups (G2) neither alert nor take a watch slot; the
+        # Comeback scan has no such key, so .get leaves it unchanged
         watch = [s for s in scan["setups"] if s["grade"] in WATCH_GRADES
-                 and s["status"] == "forming"][:WATCH_TOP_N]
+                 and s["status"] == "forming" and not s.get("sector_capped")][:WATCH_TOP_N]
         for s in watch:
             pattern_label = s["pattern"].replace("_", " ")
             cap = s.get("max_buy")
@@ -226,7 +294,7 @@ def run_monitor(force: bool = False, progress=print) -> list[dict]:
                         "opened higher") if cap is not None else ""
             checks.append(("entry", s["ticker"], s["entry"],
                            f"{s['ticker']} ({pattern_label}): "
-                           f"crossed entry {s['entry']:g} - setup triggered{cap_note}"))
+                           f"crossed entry {s['entry']:g} - setup triggered{cap_note}", None))
 
     tickers = sorted({c[1] for c in checks})
     progress(f"checking {len(tickers)} tickers ({len(open_trades)} open positions, "
@@ -255,7 +323,7 @@ def run_monitor(force: bool = False, progress=print) -> list[dict]:
             fh.write(json.dumps(alert) + "\n")
         progress(f"ALERT time: {ta['message']}")
 
-    for kind, ticker, level, message in checks:
+    for kind, ticker, level, message, trade in checks:
         price = prices.get(ticker)
         if price is None:
             continue
@@ -267,10 +335,19 @@ def run_monitor(force: bool = False, progress=print) -> list[dict]:
             continue
         fired.add(key)
         alert = {"time": now.isoformat(timespec="seconds"), "kind": kind,
-                 "ticker": ticker, "level": level, "price": round(price, 4),
-                 "message": message}
+                 "ticker": ticker, "level": level, "price": round(price, 4)}
+        title = f"Shaikh Capital — {kind.upper()}"
+        if kind == "stop":
+            # an exit instruction; days_past_stop counts from the first stop alert
+            # for this position (0 today), so the dashboard can say "hit 3 days ago"
+            message = stop_message(trade, price)
+            title = f"Shaikh Capital — EXIT: {ticker}"
+            alert["days_past_stop"] = days_past_stop(
+                ticker, level, trade.get("entry_date"), date.today()) or 0
+            alert["trade_id"] = trade.get("id")
+        alert["message"] = message
         alerts.append(alert)
-        _notify(f"Shaikh Capital — {kind.upper()}", message)
+        _notify(title, message)
         with LOG_PATH.open("a") as fh:
             fh.write(json.dumps(alert) + "\n")
         progress(f"ALERT {kind}: {message} (now {price:g})")

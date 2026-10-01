@@ -30,6 +30,11 @@ goes, and where the target is** — plus a suggested position size for your capi
   profit), and the **time exit** (sell at the close of the 40th trading day if
   neither stop nor target was hit — the backtest numbers assume you do). The
   suggested share count keeps one loss at ~1% of your capital.
+- A **greyed-out setup with a "sector full" chip** is real but held back: two
+  setups from its sector already rank higher today (a basket of picks from one
+  sector moves as one). In the 📒 Journal, a red **STOP HIT — sell** badge on an
+  open position means its price is at or below your safety stop — the plan says
+  sell, today. See *Protective guards* below.
 - A **Latest news** panel under each stock shows recent headlines before you commit.
 - The **❓ How it works** button in the header explains everything, including a
   glossary of every term used.
@@ -100,10 +105,17 @@ The **📒 Journal** tab tracks the trades you actually take:
   setup's time limit is saved with the trade (40 trading days for the pattern
   scanner; none for Comeback setups), so the price monitor can remind you on
   the time-exit day.
+- The setup's sector is saved with the trade. If your open positions already
+  hold `max_per_sector` (default 2) trades in that sector, the form shows a
+  warning naming them before you save — you can still save; the decision is
+  yours (see *Protective guards*).
 - Open positions show the latest cached price, live P&L (%, currency and R-multiple)
-  and your total open risk. Use **Close** when you exit (records price + reason:
-  target / stop / time / manual), **Stop** to trail your stop-loss up, **✕** to
-  delete a mistaken entry.
+  and your total open risk. A position whose latest price is at or below its
+  stop is marked **STOP HIT — sell** with the Close button highlighted; when a
+  sector holds `max_per_sector` or more open positions, a per-sector summary
+  line appears above the table. Use **Close** when you exit (records price +
+  reason: target / stop / time / manual), **Stop** to trail your stop-loss up,
+  **✕** to delete a mistaken entry.
 - Closed trades accumulate your real statistics: win rate, average R and total R —
   compare them against the backtest to see whether your execution matches the edge.
 
@@ -134,7 +146,14 @@ stop-losses — skip those trades or size well down.
 `python -m atlas2 monitor` checks hourly (via the `com.atlas2.monitor`
 LaunchAgent, weekdays 09:00–22:00) and fires a macOS notification when:
 
-- an **open journal position** touches its stop or target,
+- an **open journal position** touches its stop or target. A hit stop is an
+  **exit instruction**, not a hint: the notification is titled
+  `EXIT: <ticker>` and reads *"STOP HIT — sell now. Price X is below your stop
+  Y (−5.3% from entry Z). The plan was to exit here; every day held past the
+  stop is outside the plan."* It repeats once a day while the position stays
+  open, and each alert carries `days_past_stop` (calendar days since the first
+  stop alert for that position) so the Journal tab can say "stop hit 3 days
+  ago — still open". A hit target stays a "consider taking profit" note.
 - an open position reaches its **time exit**: on the morning of the last
   allowed trading day (day 40 after the day you bought, for pattern-scanner
   trades) it reminds you to sell at that day's close unless the stop or target
@@ -154,6 +173,43 @@ Alerts are logged to `data/alerts.jsonl` and shown in the Journal tab. Each
 condition alerts at most once per day. Run `... monitor --force` to test (it
 downloads current prices). The dashboard server must be restarted once after
 an update so that new journal entries store their time limit.
+
+## Protective guards
+
+Two guards exist because of one paper-traded basket (2026-08-18): five scanner
+picks of which four were financials — two custody banks, a card lender and an
+insurer — so one sector move hit all of them; and one of them fell through its
+stop two days later while the monitor only said "price at/below your stop —
+review position", the position stayed open, and the planned 5% loss became
+11%. The v2 backtest shows the system's own stops are hit about 54% of the
+time, so a hit stop has to be unmistakable, and sector concentration has to be
+limited where the picks are made.
+
+- **Stop hit = exit.** When an open position's price is at or below its stop,
+  the monitor's alert is the instruction above (`EXIT: <ticker>`, "STOP HIT —
+  sell now"), the Journal tab shows a red **STOP HIT — sell** badge with a
+  one-line instruction and how many days the position has been held past the
+  stop, and the Close button is highlighted. The alert's key and once-a-day
+  cadence are unchanged.
+- **Sector cap in the scanner.** After the setups are ranked, at most
+  `max_per_sector` (default 2) per sector and market stay in the *active* list.
+  The rest are **not deleted**: they keep their rank in the list, carry
+  `"sector_capped": true` and a `sector_cap_note` ("already 2 Financial
+  Services setups ranked higher today — skip unless you sell one"), render
+  greyed out with a *sector full* chip, and are still clickable. A setup with
+  no known sector sits in an `Unknown` bucket that is never capped. The scan
+  JSON adds `sector_counts` (setups per sector, capped ones included) and
+  `max_per_sector`; the overview counts (`setups`, `a_grades`) count only
+  active setups and add `capped`. The Comeback scan is not capped.
+- **Sector warning when logging a trade.** The journal stores each trade's
+  sector; `GET /api/journal/exposure` groups the open positions by sector
+  against the same cap, and the log form warns when the sector is already
+  full — the Save button stays available.
+
+To change the cap, set `"max_per_sector"` in `config.json` (copy the line from
+`config.example.json`); `0` or `null` switches the cap and the warning off. The
+next scan applies it; restart the dashboard server once after updating so the
+journal stores sectors.
 
 ## Backtest: does each pattern really have an edge?
 
@@ -610,12 +666,13 @@ so the 1.8 minimum filters out every signal. Set
 `config.json` holds your settings (copy `config.example.json` to `config.json`):
 
 ```json
-{ "capital_eur": 10000, "risk_pct": 1.0, "min_risk_reward": 1.8, ... }
+{ "capital_eur": 10000, "risk_pct": 1.0, "min_risk_reward": 1.8, "max_per_sector": 2, ... }
 ```
 
 Suggested size risks `risk_pct` of `capital_eur` per trade (distance from entry to
 stop), converted at the current EUR/USD/INR rate, capped at 25% of capital per
-position. Edit the file and re-scan to change it.
+position. `max_per_sector` limits how many setups per sector make the active
+list (see *Protective guards*). Edit the file and re-scan to change it.
 
 ## Commands
 

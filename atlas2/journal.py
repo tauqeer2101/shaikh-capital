@@ -35,7 +35,13 @@ ADDED_COLUMNS = (
     # NULL = not recorded (older rows / older scan files; the monitor then uses
     # config backtest.max_hold), 0 = the strategy has no time exit (Comeback).
     ("max_hold_days", "INTEGER"),
+    # the stock's sector as the scan knew it when the trade was logged (for the
+    # sector-concentration warning). NULL = not recorded; the server then looks
+    # it up read-only in the fundamentals cache when it can.
+    ("sector", "TEXT"),
 )
+
+UNKNOWN_SECTOR = "Unknown"
 
 
 def _max_hold(v) -> int | None:
@@ -49,6 +55,14 @@ def _max_hold(v) -> int | None:
     if f != f or f < 0 or f > 10000:
         return None
     return int(round(f))
+
+
+def _sector(v) -> str | None:
+    """Sanitise the sector from the dashboard: a non-empty string, else None."""
+    if not isinstance(v, str):
+        return None
+    v = v.strip()
+    return v[:80] if v else None
 
 
 class Journal:
@@ -69,14 +83,16 @@ class Journal:
     def add(self, t: dict) -> int:
         cur = self.conn.execute(
             """INSERT INTO trades (ticker, name, market, currency, pattern, grade,
-               entry_date, entry_price, shares, stop, target, notes, max_hold_days)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+               entry_date, entry_price, shares, stop, target, notes, max_hold_days,
+               sector)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
                 t["ticker"], t.get("name", ""), t["market"], t.get("currency", ""),
                 t.get("pattern", ""), t.get("grade", ""),
                 t.get("entry_date") or date.today().isoformat(),
                 float(t["entry_price"]), float(t["shares"]), float(t["stop"]),
                 t.get("target"), t.get("notes", ""), _max_hold(t.get("max_hold_days")),
+                _sector(t.get("sector")),
             ),
         )
         self.conn.commit()
@@ -133,6 +149,8 @@ def enrich_and_summarize(trades: list[dict], last_close: dict[str, float]) -> di
                 t["pnl_pct"] = round((price / t["entry_price"] - 1) * 100, 2)
                 r = _r_multiple(t, price)
                 t["r"] = None if r is None else round(r, 2)
+            # the stop is the plan's exit: at or below it the position should be gone
+            t["stop_hit"] = price is not None and price <= t["stop"]
             t["open_risk"] = round(max(0.0, (t["entry_price"] - t["stop"])) * t["shares"], 2)
             open_trades.append(t)
         else:
@@ -162,3 +180,23 @@ def enrich_and_summarize(trades: list[dict], last_close: dict[str, float]) -> di
             stats["open_risk_by_currency"].get(c, 0.0) + t["open_risk"], 2
         )
     return {"open": open_trades, "closed": closed, "stats": stats}
+
+
+def sector_exposure(open_trades: list[dict], max_per_sector: int | None) -> dict:
+    """Open positions grouped by sector, for the concentration warning:
+    {"sectors": {sector: {"count": n, "tickers": [...]}}, "max_per_sector": m,
+    "over_cap": [sectors holding at least m positions]}. A missing sector counts
+    as UNKNOWN_SECTOR, which is never 'over the cap' (the scanner does not cap it
+    either: nobody knows that those stocks move together); m of 0 / None means no
+    cap (over_cap stays empty)."""
+    sectors: dict[str, dict] = {}
+    for t in open_trades:
+        sec = t.get("sector") or UNKNOWN_SECTOR
+        bucket = sectors.setdefault(sec, {"count": 0, "tickers": []})
+        bucket["count"] += 1
+        bucket["tickers"].append(t["ticker"])
+    cap = int(max_per_sector or 0)
+    ordered = dict(sorted(sectors.items(), key=lambda kv: (-kv[1]["count"], kv[0])))
+    over = [s for s, b in ordered.items()
+            if cap > 0 and s != UNKNOWN_SECTOR and b["count"] >= cap]
+    return {"sectors": ordered, "max_per_sector": cap, "over_cap": over}

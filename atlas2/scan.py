@@ -25,6 +25,10 @@ from .patterns import detect_all
 
 ROOT = Path(__file__).resolve().parent.parent
 MIN_DOLLAR_VOL = {"us": 5e6, "de": 1e6, "in": 5e7}  # in local currency
+# config.json -> "max_per_sector": the active list keeps at most this many setups
+# per sector and market; the rest stay listed but flagged (0 / null = no cap)
+MAX_PER_SECTOR_DEFAULT = 2
+UNKNOWN_SECTOR = "Unknown"
 FX_TICKERS = {"USD": "EURUSD=X", "INR": "EURINR=X", "EUR": None}
 MARKET_CCY = {"us": "USD", "de": "EUR", "in": "INR"}
 
@@ -105,11 +109,52 @@ def load_config(cfg_path: Path | None = None) -> dict:
         "regime_filter": True,
         "earnings_warn_days": 7,
         "dividend_max_age_days": 3,
+        "max_per_sector": MAX_PER_SECTOR_DEFAULT,
         "pattern_tuning": PATTERN_TUNING_DEFAULTS,
         "backtest": BACKTEST_DEFAULTS,
     }
     user = json.loads(cfg_path.read_text()) if cfg_path.exists() else {}
     return _deep_merge(defaults, user)
+
+
+def sector_cap(v) -> int:
+    """config max_per_sector as a whole number; 0 (= no cap) for None, 0, negative
+    or anything unreadable."""
+    if v is None or isinstance(v, bool):
+        return 0
+    try:
+        n = int(float(v))
+    except (TypeError, ValueError):
+        return 0
+    return max(0, n)
+
+
+def apply_sector_cap(setups: list[dict], max_per_sector, market: str | None = None) -> dict[str, int]:
+    """Flag the setups beyond the per-(market, sector) cap, in the list's order.
+
+    Setups are expected sorted by composite score. The first `max_per_sector` of
+    each sector (within a market) stay active: 'sector_capped' False; the rest get
+    'sector_capped' True and a 'sector_cap_note' - they are NOT removed, so the
+    user still sees them. A missing sector is the UNKNOWN_SECTOR bucket and is
+    never capped (we do not know that those stocks move together). Returns the
+    number of setups per sector (all of them, capped or not); the cap is off for
+    max_per_sector 0 / None.
+
+    Why: on 2026-08-18 four of five paper-traded picks were financials - one
+    sector move hit all of them at once."""
+    cap = sector_cap(max_per_sector)
+    counts: dict[str, int] = {}
+    seen: dict[tuple, int] = {}
+    for s in setups:
+        sector = s.get("sector") or UNKNOWN_SECTOR
+        counts[sector] = counts.get(sector, 0) + 1
+        key = (s.get("market") or market, sector)
+        seen[key] = seen.get(key, 0) + 1
+        capped = cap > 0 and sector != UNKNOWN_SECTOR and seen[key] > cap
+        s["sector_capped"] = capped
+        s["sector_cap_note"] = (f"already {cap} {sector} setups ranked higher today — skip "
+                                "unless you sell one") if capped else None
+    return counts
 
 
 def _history_years(bt: dict, market: str) -> int | None:
@@ -572,6 +617,9 @@ def scan_market(market: str, cfg: dict, progress=print) -> dict:
         })
 
     setups.sort(key=lambda s: s["composite_score"], reverse=True)
+    max_per_sector = sector_cap(cfg.get("max_per_sector", MAX_PER_SECTOR_DEFAULT))
+    sector_counts = apply_sector_cap(setups, max_per_sector, market)
+    n_capped = sum(1 for s in setups if s["sector_capped"])
     result = {
         "market": market,
         "generated": datetime.now().isoformat(timespec="seconds"),
@@ -591,6 +639,10 @@ def scan_market(market: str, cfg: dict, progress=print) -> dict:
         "exit_rule": {"max_hold_days": max_hold, "backtest_max_hold_days": bt_max_hold,
                       "note": tuning_note},
         "regime": regime,
+        # the sector cap: setups per sector (capped ones included) and the cap
+        # applied; capped setups carry sector_capped / sector_cap_note
+        "sector_counts": sector_counts,
+        "max_per_sector": max_per_sector,
         "setups": setups,
         "warnings": sorted(warnings, key=lambda w: w["ticker"]),
     }
@@ -599,7 +651,9 @@ def scan_market(market: str, cfg: dict, progress=print) -> dict:
     (out_dir / f"{market}_latest.json").write_text(json.dumps(result, indent=1))
     (out_dir / f"{market}_{date.today().isoformat()}.json").write_text(json.dumps(result))
     store.close()
-    progress(f"[{market}] done: {len(setups)} setups, {len(warnings)} bearish warnings")
+    held = f" ({n_capped} more held back by the sector cap)" if n_capped else ""
+    progress(f"[{market}] done: {len(setups) - n_capped} setups{held}, "
+             f"{len(warnings)} bearish warnings")
     return result
 
 

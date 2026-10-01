@@ -207,6 +207,26 @@
   .trendbadge.down { background: var(--red-bg); color: var(--red); }
   .trendbadge.side { background: var(--amber-bg); color: var(--amber); }
 
+  /* ---------- protective guards: sector cap + stop hit ---------- */
+  tr.row.capped { opacity: .55; }
+  tr.row.capped:hover, tr.row.capped.sel { opacity: .85; }
+  .chip.sectorfull { display: inline-block; margin-left: 6px; font-size: 10px; padding: 1px 7px;
+                     border-radius: 10px; background: var(--bg); color: var(--dim);
+                     border: 1px solid var(--border); font-weight: 600; vertical-align: middle;
+                     cursor: help; }
+  .capnote { font-size: 11px; color: var(--faint); margin-top: 2px; }
+  .exitbadge { display: inline-block; background: var(--red); color: #fff; font-weight: 700;
+               font-size: 10.5px; padding: 2px 8px; border-radius: 10px; margin-left: 6px;
+               letter-spacing: .02em; vertical-align: middle; white-space: nowrap; }
+  tr.stophit > td { background: var(--tint-red); }
+  .btn.exit { background: var(--red); color: #fff; box-shadow: 0 0 0 3px var(--red-bg); }
+  .patcard.stop { border-color: var(--bd-red); background: var(--tint-red); }
+  .sectorline { padding: 2px 12px 8px; font-size: 12px; color: var(--dim); }
+  .sectorline b.over { color: var(--amber); }
+  .sectorwarn { margin-top: 8px; padding: 8px 11px; border-radius: 10px; font-size: 12px;
+                border: 1px solid var(--bd-amber); background: var(--tint-amber); }
+  .section-head h3 .plain { text-transform: none; letter-spacing: 0; font-weight: 400; }
+
   /* ---------- regime banner ---------- */
   .regime { padding: 11px 16px; margin: 10px 12px 4px; border-radius: 14px;
             font-size: 12.5px; border: 1px solid var(--border); box-shadow: var(--shadow); }
@@ -373,6 +393,13 @@ the safety stop limits how much. Data: Yahoo Finance (free, may lag). Settings i
         Shaikh Capital then watches it hourly and pops up a notification when your stop or
         target is hit, and a reminder on the morning of the time-exit day (sell at that day's
         close). The 📒 Journal tab shows how you're really doing over time.</li>
+      <li><b>Two guards</b> come from a real lesson: <span id="help_cap_clause">at most
+        <span id="help_cap">2</span> setups per sector make the active list each day (the rest
+        are greyed out as "sector full")</span>, because a basket of five picks that were really four financials moved as one when that
+        sector fell — and when an open position trades at or below its safety stop, the Journal
+        and the alert say <b style="color:var(--red)">STOP HIT — sell</b> instead of "review",
+        because holding past the stop once turned a planned 5% loss into 11%. The cap is
+        <code>max_per_sector</code> in config.json.</li>
     </ol>
     <h3>Words you'll see</h3>
     <div class="gloss">
@@ -451,7 +478,7 @@ async function loadOverview() {
           ${s.regime && s.regime !== "unknown"
             ? `<span class="chip ${s.regime}">${REGIME_ICON[s.regime] ?? ""} ${s.regime}</span>` : ""}</div>
         <div class="nums">
-          <span><b>${s.setups}</b> setups</span>
+          <span><b>${s.setups}</b> setups${s.capped ? `<span class="faint" title="held back by the sector cap"> +${s.capped} capped</span>` : ""}</span>
           <span><b>${s.a_grades}</b> A-grade</span>
           <span><b>${s.warnings}</b> warnings</span>
         </div>
@@ -481,9 +508,28 @@ async function loadScan() {
     return;
   }
   scanData = await r.json();
+  syncHelpCap(scanData);
   renderList();
   if (scanData.setups.length) select(0);
   else el("detail").innerHTML = `<div class="empty">${emptyText(true)}</div>`;
+}
+
+/* the help modal's sector-cap sentence follows the scan file: the number for a positive
+   cap, "switched off" for 0/null (README: that disables the cap); the clause is left as the
+   last pattern scan set it when the field is absent (Comeback / an older scan file), so the
+   default "at most 2" only shows on a cold start. The rest of the <li> - the stop-hit guard - stays. */
+function syncHelpCap(scanData) {
+  const clause = el("help_cap_clause");
+  if (!clause) return;
+  if (!clause.dataset.html) clause.dataset.html = clause.innerHTML;   // the "at most N" wording
+  if (!("max_per_sector" in scanData)) return;   // Comeback / older scan files: keep the last pattern scan's wording
+  const cap = Number(scanData.max_per_sector);
+  if (cap === 0) {   // 0 or null: the README says that disables the cap
+    clause.textContent = "the sector cap is currently switched off (max_per_sector = 0 in config.json), but it exists";
+    return;
+  }
+  clause.innerHTML = clause.dataset.html;
+  if (cap > 0) el("help_cap").textContent = cap;
 }
 
 /* switched-off patterns by source: manual config lists vs the backtest's verdicts
@@ -543,12 +589,16 @@ function regimeBanner() {
     ${fmt(r.vs_sma200_pct,1)}% vs its 200-day average)</span></div>`;
 }
 
-function renderList() {
-  const rows = scanData.setups.map((s, i) => `
-    <tr class="row" id="r${i}" onclick="select(${i})">
+/* one setup row; a sector-capped setup is greyed out with a "sector full" chip and
+   the scan's note, but stays clickable (it is still a real setup) */
+function setupRow(s, i) {
+  const capped = !!s.sector_capped;
+  const note = escH(s.sector_cap_note || "sector full");
+  return `
+    <tr class="row${capped ? " capped" : ""}" id="r${i}" onclick="select(${i})">
       <td><span class="grade ${s.grade}">${s.grade}</span></td>
-      <td><div class="tick">${s.market ? (FLAG[s.market] ?? "") + " " : ""}${s.ticker}${s.earnings_soon ? ' <span class="ewarn" title="earnings in '+s.earnings_in_days+' day(s) — gap risk">⚠E</span>' : ''}</div>
-          <div class="dim" style="font-size:11px">${s.name}</div></td>
+      <td><div class="tick">${s.market ? (FLAG[s.market] ?? "") + " " : ""}${s.ticker}${s.earnings_soon ? ' <span class="ewarn" title="earnings in '+s.earnings_in_days+' day(s) — gap risk">⚠E</span>' : ''}${capped ? `<span class="chip sectorfull" title="${note}">sector full</span>` : ""}</div>
+          <div class="dim" style="font-size:11px">${s.name}</div>${capped ? `<div class="capnote">${note}</div>` : ""}</td>
       <td>${s.pattern.replaceAll("_"," ")}<br><span class="status ${s.status}">${statusLabel(s.status)}</span></td>
       <td class="dim">${fmt(s.close)}</td>
       <td>${fmt(s.entry)}</td>
@@ -556,7 +606,18 @@ function renderList() {
       <td class="pos">${fmt(s.target)}</td>
       <td>1:${fmt(s.risk_reward,1)}</td>
       <td><b>${fmt(s.composite_score,0)}</b></td>
-    </tr>`).join("");
+    </tr>`;
+}
+/* "N setups (M more held back by the sector cap)" */
+function setupCountText(setups) {
+  const capped = setups.filter(s => s.sector_capped).length;
+  const n = setups.length - capped;
+  return `${n} setup${n === 1 ? "" : "s"}` +
+    (capped ? ` <span class="faint plain">(${capped} more held back by the sector cap)</span>` : "");
+}
+
+function renderList() {
+  const rows = scanData.setups.map(setupRow).join("");
   const warns = scanData.warnings.length ? `
     <div class="section-head"><h3>⚠ Bearish warnings (${scanData.warnings.length})</h3>
       <span class="faint" style="font-size:11px">charts that look like they may fall — don't buy; review if you own them</span></div>
@@ -569,6 +630,7 @@ function renderList() {
   el("list").innerHTML = `
     ${regimeBanner()}
     ${tuningBanner()}
+    ${scanData.setups.length ? `<div class="section-head"><h3>${setupCountText(scanData.setups)}</h3></div>` : ""}
     <table><thead><tr>
       <th title="A = strongest setups"></th><th>Stock</th><th>Pattern</th>
       <th title="latest closing price">Price</th>
@@ -638,6 +700,9 @@ async function select(i) {
       <span class="status ${s.status}">${statusLabel(s.status)}</span>
       ${s.conflicting_bearish ? '<span style="color:var(--amber)"> ⚠ a bearish pattern is also present</span>':''}
       ${s.earnings_date ? `<span style="color:${s.earnings_soon?'var(--amber)':'var(--faint)'}"> · earnings ${s.earnings_date}${s.earnings_in_days!=null?` (in ${s.earnings_in_days}d)`:''}</span>` : ''}</div>
+    ${s.sector_capped ? `<div class="regime side" style="margin:10px 0 0;font-size:12px">⛔ <b>Sector full</b> —
+      ${escH(s.sector_cap_note || "the sector cap is reached")}. Picks from one sector move together, so the
+      cap limits how much of your book one sector move can hit.</div>` : ""}
     ${actionBox(s)}
     <div id="chart"></div>
     <div class="levels">
@@ -746,14 +811,38 @@ async function showLogForm() {
         <label class="dim">Date<input id="f_date" type="date" value="${new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10)}"></label>
       </div>
       <div class="faint" style="font-size:11px;margin-top:6px">${fillHint}${capHint}</div>
-      <label class="dim" style="display:block;margin-top:8px">Notes
-        <input id="f_notes" type="text" placeholder="optional" style="width:100%"></label>
+      <div style="display:grid;grid-template-columns:1fr 2fr;gap:8px;margin-top:8px">
+        <label class="dim">Sector<input id="f_sector" type="text" value="${escH(s.sector ?? "")}"
+          placeholder="unknown" onchange="sectorWarning()"></label>
+        <label class="dim">Notes<input id="f_notes" type="text" placeholder="optional"></label>
+      </div>
+      <div id="f_sector_warn"></div>
       <div style="margin-top:10px;display:flex;gap:8px">
         <button class="btn" onclick="submitLog()">Save to journal</button>
         <button class="btn ghost" onclick="select(sel)">Cancel</button>
       </div>
       <div class="dim" id="f_msg" style="margin-top:6px;font-size:11px"></div>
     </div>`;
+  sectorWarning();
+}
+
+/* the sector-concentration warning for the log form: shown when the open positions
+   already hold max_per_sector or more trades in this sector. It never blocks the
+   Save button - the user decides. */
+function sectorWarningHtml(sector, ex) {
+  const cap = Number(ex?.max_per_sector) || 0;
+  const b = ex?.sectors?.[sector];
+  if (!cap || !sector || sector === "Unknown" || !b || b.count < cap) return "";
+  return `<div class="sectorwarn">⚠ You already hold ${b.count} ${escH(sector)} position${b.count === 1 ? "" : "s"} (${escH((b.tickers || []).join(", "))}). Adding another concentrates your risk — the four-financials lesson.
+    You can still save; the decision is yours.</div>`;
+}
+async function sectorWarning() {
+  const box = el("f_sector_warn"), input = el("f_sector");
+  if (!box || !input) return;
+  let ex;
+  try { ex = await (await fetch("/api/journal/exposure")).json(); }
+  catch (e) { box.innerHTML = ""; return; }
+  box.innerHTML = sectorWarningHtml(input.value.trim(), ex);
 }
 
 async function submitLog() {
@@ -765,6 +854,7 @@ async function submitLog() {
     shares: parseFloat(el("f_shares").value),
     stop: s.stop, target: s.target,
     entry_date: el("f_date").value, notes: el("f_notes").value,
+    sector: (el("f_sector")?.value || "").trim() || null,
     // the strategy's time exit, so the monitor can remind you on that day:
     // the scan's rule when it has one; Comeback has none (0); an older pattern
     // scan file sends null and the monitor falls back to config backtest.max_hold
@@ -897,7 +987,35 @@ async function loadJournal() {
   if (r.status === 401) { location.href = "/login"; return; }
   const d = await r.json();
   const alertData = ra.ok ? await ra.json() : { alerts: [] };
-  renderAlerts(alertData.alerts);
+  renderAlerts(alertData.alerts, d.open ?? []);
+  renderJournal(d);
+}
+
+/* an open position at or below its stop: the plan says sell; say so, and say how long
+   it has been so (days_past_stop from /api/journal: null until the monitor's first alert) */
+function stopHitText(t) {
+  const days = t.days_past_stop;
+  const since = days == null ? "" : days === 0 ? " Stop hit today."
+    : ` Stop hit ${days} day${days === 1 ? "" : "s"} ago — still open.`;
+  return `Sell now: price ${fmt(t.last_price)} is at/below your stop ${fmt(t.stop)} — the plan was to
+    exit here; every day held past the stop is outside the plan.${since}`;
+}
+const isStopHit = t => t.stop_hit ?? (t.last_price != null && t.last_price <= t.stop);
+
+/* per-sector line above the open positions, only when a sector is at/over the cap */
+function sectorLine(ex) {
+  const cap = Number(ex?.max_per_sector) || 0;
+  const sectors = ex?.sectors || {};
+  const isOver = (s, b) => cap > 0 && s !== "Unknown" && b.count >= cap;
+  const over = Object.entries(sectors).filter(([s, b]) => isOver(s, b));
+  if (!over.length) return "";
+  return `<div class="sectorline">Sector exposure: ${Object.entries(sectors).map(([s, b]) =>
+      `<b class="${isOver(s, b) ? "over" : ""}">${escH(s)} ${b.count}</b> <span class="faint">(${escH((b.tickers || []).join(", "))})</span>`).join(" · ")}
+    — ${over.map(([s]) => escH(s)).join(", ")} ${over.length === 1 ? "is" : "are"} at the ${cap}-per-sector cap:
+    one sector move hits all of them.</div>`;
+}
+
+function renderJournal(d) {
   const st = d.stats;
   const ccy = obj => Object.entries(obj).map(([c,v]) => `${fmt(v,0)} ${c}`).join(" · ") || "—";
   const statCards = `
@@ -908,21 +1026,27 @@ async function loadJournal() {
          ["Realized profit/loss", ccy(st.realized_pnl_by_currency)]]
         .map(([k,v]) => `<div class="fund">${k}<div><b>${v}</b></div></div>`).join("")}
     </div>`;
-  const openRows = d.open.map(t => `
-    <tr>
-      <td class="tick">${t.ticker}<div class="faint" style="font-size:11px">${t.pattern.replaceAll("_"," ")}</div></td>
+  const openRows = d.open.map(t => {
+    const hit = isStopHit(t);
+    return `
+    <tr class="${hit ? "stophit" : ""}">
+      <td class="tick">${t.ticker}${hit ? `<span class="exitbadge">STOP HIT — sell</span>` : ""}
+        <div class="faint" style="font-size:11px">${(t.pattern || "").replaceAll("_"," ")}${t.sector ? " · " + escH(t.sector) : ""}</div>
+        ${hit ? `<div class="neg" style="font-size:11px;font-weight:600;max-width:260px">${stopHitText(t)}</div>` : ""}</td>
       <td class="dim">${t.entry_date}</td>
       <td>${fmt(t.entry_price)}</td>
       <td>${fmt(t.shares,0)}</td>
       <td class="neg">${fmt(t.stop)}</td>
-      <td>${fmt(t.last_price)}</td>
+      <td class="${hit ? "neg" : ""}">${fmt(t.last_price)}</td>
       <td class="${(t.pnl??0) >= 0 ? "pos":"neg"}">${fmt(t.pnl)} ${t.currency}<div class="faint" style="font-size:11px">${fmt(t.pnl_pct,1)}% ${t.r==null?"":"· "+t.r+"R"}</div></td>
       <td>
-        <button class="btn sm" onclick="closeTrade(${t.id}, ${t.last_price ?? t.entry_price})">Close</button>
+        <button class="btn sm${hit ? " exit" : ""}" onclick="closeTrade(${t.id}, ${t.last_price ?? t.entry_price}${hit ? ", 'stop'" : ""})">${hit ? "Close — sell" : "Close"}</button>
         <button class="btn sm ghost" onclick="moveStop(${t.id}, ${t.stop})">Stop</button>
         <button class="btn sm ghost" onclick="delTrade(${t.id})">✕</button>
       </td>
-    </tr>`).join("");
+    </tr>`;
+  }).join("");
+  const nHit = d.open.filter(isStopHit).length;
   const closedRows = d.closed.map(t => `
     <tr>
       <td class="tick">${t.ticker}<div class="faint" style="font-size:11px">${t.pattern.replaceAll("_"," ")}</div></td>
@@ -935,7 +1059,9 @@ async function loadJournal() {
     </tr>`).join("");
   el("list").innerHTML = `
     ${statCards}
-    <div class="section-head"><h3>Open positions (${d.open.length})</h3></div>
+    <div class="section-head"><h3>Open positions (${d.open.length})</h3>${nHit
+      ? `<span class="neg" style="font-size:12px;font-weight:600">${nHit} at/below the stop — sell</span>` : ""}</div>
+    ${sectorLine(d.exposure)}
     <table><thead><tr><th>Stock</th><th>Entered</th><th>Fill</th><th>Sh</th><th>Stop</th>
       <th>Now</th><th>P&L</th><th></th></tr></thead>
       <tbody>${openRows || `<tr><td colspan="8" class="dim">No open positions — log one from any setup.</td></tr>`}</tbody></table>
@@ -945,25 +1071,36 @@ async function loadJournal() {
       <tbody>${closedRows || `<tr><td colspan="7" class="dim">No closed trades yet.</td></tr>`}</tbody></table>`;
 }
 
-function renderAlerts(alerts) {
+/* open: the live open positions from /api/journal. An alert line is a snapshot from when
+   it fired, so only the live list can say whether the position is still open. The match is
+   by trade_id, with a ticker fallback for alert lines written before trade_id existed
+   (a ticker alone would call a closed position "still open" once the same stock is re-entered). */
+function renderAlerts(alerts, open = []) {
   if (!alerts.length) return;
+  const openIds = new Set(open.map(t => t.id));
+  const openTickers = new Set(open.map(t => t.ticker));
+  const stillOpen = a => a.trade_id != null ? openIds.has(a.trade_id) : openTickers.has(a.ticker);
   const icon = { stop: "🔴", target: "🟢", entry: "🔵", time: "⏰" };
   el("detail").innerHTML = `
     <h3 style="margin-top:4px">Recent alerts</h3>
     ${alerts.slice(0, 25).map(a => `
-      <div class="patcard" style="padding:9px 13px">
+      <div class="patcard${a.kind === "stop" ? " stop" : ""}" style="padding:9px 13px">
         <span>${icon[a.kind] ?? "•"}</span>
-        <b>${a.ticker}</b> <span class="faint" style="font-size:11px">${a.time.replace("T"," ")}</span>
-        <div class="dim" style="font-size:12px">${a.message}${a.price != null ? ` — price was ${fmt(a.price)}` : ""}</div>
+        <b>${a.ticker}</b>${a.kind === "stop" ? `<span class="exitbadge">EXIT</span>` : ""}
+        <span class="faint" style="font-size:11px">${a.time.replace("T"," ")}</span>
+        <div class="${a.kind === "stop" ? "" : "dim"}" style="font-size:12px">${escH(a.message)}${a.price != null ? ` — price was ${fmt(a.price)}` : ""}${
+          a.kind === "stop" && Number(a.days_past_stop) > 0
+            ? ` · stop first hit ${a.days_past_stop} day${a.days_past_stop === 1 ? "" : "s"} earlier${
+                stillOpen(a) ? " — still open" : ""}` : ""}</div>
       </div>`).join("")}
     <div class="faint" style="font-size:11px;margin-top:8px">The monitor checks hourly on
       weekdays (09:00–22:00) and also sends macOS notifications.</div>`;
 }
 
-async function closeTrade(id, suggested) {
+async function closeTrade(id, suggested, defaultReason) {
   const px = prompt("Exit price:", suggested);
   if (px == null || px === "") return;
-  const reason = prompt("Reason (target / stop / time / manual):", "manual") || "manual";
+  const reason = prompt("Reason (target / stop / time / manual):", defaultReason || "manual") || "manual";
   await fetch(`/api/journal/${id}/close`, { method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({ exit_price: parseFloat(px), exit_reason: reason }) });

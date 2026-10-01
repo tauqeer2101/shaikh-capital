@@ -6,6 +6,8 @@ Read-only. Serves the latest scan JSON per market and per-ticker chart data
 from __future__ import annotations
 
 import json
+import sqlite3
+from datetime import date
 from pathlib import Path
 
 from fastapi import Body, FastAPI, HTTPException
@@ -13,7 +15,8 @@ from fastapi.responses import FileResponse, JSONResponse
 
 from .data import PriceStore
 from .indicators import add_indicators
-from .journal import Journal, enrich_and_summarize
+from .journal import Journal, enrich_and_summarize, sector_exposure
+from .monitor import days_past_stop
 
 ROOT = Path(__file__).resolve().parent.parent
 STATIC = Path(__file__).resolve().parent / "static"
@@ -114,11 +117,14 @@ def scans_available():
         path = ROOT / "data" / "scans" / f"{m}_latest.json"
         if path.exists():
             d = json.loads(path.read_text())
-            top = d["setups"][0] if d["setups"] else None
+            # the sector cap keeps capped setups in the file but out of the counts
+            active = [s for s in d["setups"] if not s.get("sector_capped")]
+            top = active[0] if active else None
             out[m] = {
                 "generated": d["generated"],
-                "setups": len(d["setups"]),
-                "a_grades": sum(1 for s in d["setups"] if s["grade"] == "A"),
+                "setups": len(active),
+                "a_grades": sum(1 for s in active if s["grade"] == "A"),
+                "capped": len(d["setups"]) - len(active),
                 "warnings": len(d["warnings"]),
                 "regime": d.get("regime", {}).get("status", "unknown"),
                 "top": None if top is None else {
@@ -248,13 +254,83 @@ def _last_closes(tickers: list[str]) -> dict[str, float]:
     return out
 
 
+FUNDAMENTALS_DB = ROOT / "data" / "cache" / "fundamentals.sqlite3"
+
+
+def _max_per_sector() -> int:
+    """config max_per_sector (the scanner's cap), 2 when the config is unreadable."""
+    try:
+        from .scan import MAX_PER_SECTOR_DEFAULT, load_config, sector_cap  # lazy: pulls yfinance
+        return sector_cap(load_config().get("max_per_sector", MAX_PER_SECTOR_DEFAULT))
+    except Exception:
+        return 2
+
+
+def _cached_sectors(tickers: list[str], db_path: Path | None = None) -> dict[str, str]:
+    """Sector per ticker from the fundamentals cache, read-only; {} when the file
+    is missing or unreadable (never fails - the journal works without it)."""
+    path = Path(db_path) if db_path else FUNDAMENTALS_DB
+    out: dict[str, str] = {}
+    if not tickers or not path.exists():
+        return out
+    try:
+        conn = sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True)
+        try:
+            for t in set(tickers):
+                row = conn.execute("SELECT payload FROM fundamentals WHERE ticker = ?",
+                                   (t,)).fetchone()
+                if row is None:
+                    continue
+                sector = (json.loads(row[0]) or {}).get("sector")
+                if isinstance(sector, str) and sector.strip():
+                    out[t] = sector.strip()
+        finally:
+            conn.close()
+    except Exception:
+        return {}
+    return out
+
+
+def _fill_sectors(trades: list[dict]) -> None:
+    """Fill a NULL journal sector from the fundamentals cache (read-only, in memory
+    only - the row itself is not backfilled)."""
+    missing = [t["ticker"] for t in trades if not t.get("sector")]
+    found = _cached_sectors(missing)
+    for t in trades:
+        if not t.get("sector"):
+            t["sector"] = found.get(t["ticker"])
+
+
+def _open_trades_with_sectors() -> list[dict]:
+    j = Journal(JOURNAL_DB)
+    trades = [t for t in j.all_trades() if t["exit_price"] is None]
+    j.close()
+    _fill_sectors(trades)
+    return trades
+
+
 @app.get("/api/journal")
 def journal_list():
     j = Journal(JOURNAL_DB)
     trades = j.all_trades()
     j.close()
+    _fill_sectors(trades)
     closes = _last_closes([t["ticker"] for t in trades if t["exit_price"] is None])
-    return enrich_and_summarize(trades, closes)
+    out = enrich_and_summarize(trades, closes)
+    # stop_hit comes from enrich_and_summarize; days_past_stop from the alert log
+    # (None until the monitor has fired its first stop alert for the position)
+    for t in out["open"]:
+        t["days_past_stop"] = (days_past_stop(t["ticker"], t["stop"], t["entry_date"], date.today())
+                               if t.get("stop_hit") else None)
+    out["exposure"] = sector_exposure(out["open"], _max_per_sector())
+    return out
+
+
+@app.get("/api/journal/exposure")
+def journal_exposure():
+    """Open positions per sector, against the scanner's sector cap - the dashboard
+    warns before a trade is logged into a sector that is already full."""
+    return sector_exposure(_open_trades_with_sectors(), _max_per_sector())
 
 
 @app.post("/api/journal")
