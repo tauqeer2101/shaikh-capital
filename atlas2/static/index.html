@@ -1037,6 +1037,8 @@ function renderJournal(d) {
       <td>${fmt(t.entry_price)}</td>
       <td>${fmt(t.shares,0)}</td>
       <td class="neg">${fmt(t.stop)}</td>
+      <td class="pos">${fmt(t.target)}${t.target != null && t.last_price
+        ? `<div class="faint" style="font-size:11px">${sgn((t.target / t.last_price - 1) * 100, 1, "%")} to go</div>` : ""}</td>
       <td class="${hit ? "neg" : ""}">${fmt(t.last_price)}</td>
       <td class="${(t.pnl??0) >= 0 ? "pos":"neg"}">${fmt(t.pnl)} ${t.currency}<div class="faint" style="font-size:11px">${fmt(t.pnl_pct,1)}% ${t.r==null?"":"· "+t.r+"R"}</div></td>
       <td>
@@ -1063,8 +1065,8 @@ function renderJournal(d) {
       ? `<span class="neg" style="font-size:12px;font-weight:600">${nHit} at/below the stop — sell</span>` : ""}</div>
     ${sectorLine(d.exposure)}
     <table><thead><tr><th>Stock</th><th>Entered</th><th>Fill</th><th>Sh</th><th>Stop</th>
-      <th>Now</th><th>P&L</th><th></th></tr></thead>
-      <tbody>${openRows || `<tr><td colspan="8" class="dim">No open positions — log one from any setup.</td></tr>`}</tbody></table>
+      <th title="where the plan takes profit">Target</th><th>Now</th><th>P&L</th><th></th></tr></thead>
+      <tbody>${openRows || `<tr><td colspan="9" class="dim">No open positions — log one from any setup.</td></tr>`}</tbody></table>
     <div class="section-head"><h3>Closed trades (${d.closed.length})</h3></div>
     <table><thead><tr><th>Stock</th><th>Dates</th><th>Entry → Exit</th><th>Sh</th>
       <th>P&L</th><th>R</th><th>Exit / notes</th></tr></thead>
