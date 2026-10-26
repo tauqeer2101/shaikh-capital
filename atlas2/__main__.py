@@ -25,6 +25,14 @@ Commands:
                       smoke run on the first N entries, written to --out
                       (default data/exit_experiment_smoke.json), never the
                       real data/exit_experiment.json.
+  strategy-lab [--offline] [--out PATH] [--refresh]
+                      pre-registered strategy lab: momentum rotation in stocks
+                      and a leveraged Nasdaq-100 with a trend filter, against a
+                      40%/yr target and the Nasdaq (data/strategy_lab.json).
+                      The index / ETF / T-bill series are downloaded once into
+                      data/cache/lab_series.sqlite3 and reused; --offline never
+                      touches the network (fails if that cache is missing),
+                      --refresh downloads them again.
 """
 from __future__ import annotations
 
@@ -138,6 +146,10 @@ def main() -> None:
         from .exit_experiment import main as exit_experiment_main
 
         exit_experiment_main(args[1:])
+    elif cmd == "strategy-lab":
+        from .strategy_lab import main as strategy_lab_main
+
+        strategy_lab_main(args[1:])
     elif cmd == "monitor":
         from .monitor import run_monitor
 
