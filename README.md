@@ -682,9 +682,40 @@ list (see *Protective guards*). Edit the file and re-scan to change it.
 .venv/bin/python -m atlas2 universe      # refresh index constituent lists
 .venv/bin/python -m atlas2 backtest      # 10-year replay of the scanner, after fees, vs the market
 .venv/bin/python -m atlas2 portfolio     # replay the backtest trades as one account
+.venv/bin/python -m atlas2 doctor        # is everything running? OK / WARN / FAIL per check
 ```
 
 See **Backtest** above for what the backtest does and how to read it.
+
+## Keeping it running (operations)
+
+Three launchd jobs run the system: `com.atlas2.serve` (the dashboard, restarted
+if it dies), `com.atlas2.scan` (07:30 daily; a missed run happens when the Mac
+wakes) and `com.atlas2.monitor` (hourly). What protects them (`atlas2/ops.py`):
+
+- **Health light.** Every run of every job is recorded in `data/health.json`. The
+  dashboard header shows ✓ / ⚠ / ⛔ (click it for the list). A problem also shows as
+  a red banner, and a failed scan sends a macOS notification.
+- **One failure stops nothing else.** The scan runs the backup, each market, Comeback
+  and the Nasdaq signal separately. A crash in one is logged and the rest still run.
+- **Self-heal.** If no scan has succeeded by 10:00 on a weekday (the Mac was off at
+  07:30, or the run failed), the hourly monitor starts one, at most twice a day.
+- **Never two scans at once.** A file lock refuses a second scan (SCAN.command clicked
+  during the 07:30 run).
+- **Prices.** Failed downloads are retried in small batches. A market whose index
+  is two or more sessions behind is flagged "prices stale". Stocks whose prices
+  stopped updating are skipped. Today's bar is ignored while the exchange is still
+  trading (India is open during the 07:30 scan).
+- **Stops are never silently unchecked.** If Yahoo has no price for a stock you hold,
+  the monitor tries it alone. If that fails too, you get a "STOP NOT CHECKED"
+  notification once a day.
+- **Backups.** The journal (after an integrity check), the alert log and the Nasdaq
+  paper account are copied to `data/backups/<day>/` before each scan; 30 days are
+  kept. They sit on the same disk, so keep Time Machine on (`doctor` warns without it).
+- **Logs** (`data/scan.log`, `data/monitor.log`) carry timestamps and rotate at 5 MB.
+- **Login.** Ten wrong passwords from one address lock the login for 15 minutes.
+- **Packages.** `requirements.lock` pins the versions last verified. If an update
+  breaks something: `python3 -m venv .venv && .venv/bin/pip install -r requirements.lock`.
 
 Unit tests (synthetic data, never touch `data/`):
 

@@ -25,8 +25,8 @@ from .fundamentals import (FundamentalStore, dividend_summary, fetch_dividends,
                            score_fundamentals)
 from .indicators import add_indicators, relative_strength_3m
 from .patterns import BULLISH_DETECTORS, detect_all
-from .scan import (MARKET_CCY, MIN_DOLLAR_VOL, ROOT, _fx_to_eur, load_config,
-                   load_universe, market_regime, technical_score)
+from .scan import (MARKET_CCY, MIN_DOLLAR_VOL, ROOT, _fx_to_eur, drop_unfinished_bar,
+                   load_config, load_universe, market_regime, technical_score)
 
 DD_MIN, DD_MAX = -0.45, -0.25   # how far below the all-time high qualifies
 MIN_FUND_SCORE = 55.0
@@ -48,10 +48,10 @@ def scan_comeback(cfg: dict | None = None, progress=print) -> dict:
             continue
         names = dict(zip(universe["ticker"], universe["name"]))
         indices = dict(zip(universe["ticker"], universe["index"]))
-        bench = store.load(BENCHMARKS[market])
+        bench = drop_unfinished_bar(store.load(BENCHMARKS[market]), market)
         regimes[market] = market_regime(bench)
         for t in universe["ticker"]:
-            df = store.load(t)
+            df = drop_unfinished_bar(store.load(t), market)
             if len(df) < 300:
                 continue
             df = add_indicators(df)
@@ -184,10 +184,11 @@ def scan_comeback(cfg: dict | None = None, progress=print) -> dict:
         "setups": setups,
         "warnings": [],
     }
+    from .backtest import write_json_atomic
+
     out_dir = ROOT / "data" / "scans"
-    out_dir.mkdir(parents=True, exist_ok=True)
-    (out_dir / "comeback_latest.json").write_text(json.dumps(result, indent=1))
-    (out_dir / f"comeback_{date.today().isoformat()}.json").write_text(json.dumps(result))
+    write_json_atomic(out_dir / "comeback_latest.json", result, indent=1)
+    write_json_atomic(out_dir / f"comeback_{date.today().isoformat()}.json", result)
     store.close()
     progress(f"[comeback] done: {len(setups)} quality-recovery setups")
     return result

@@ -10,8 +10,9 @@ from __future__ import annotations
 
 import copy
 import json
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 import yfinance as yf
@@ -31,6 +32,12 @@ MAX_PER_SECTOR_DEFAULT = 2
 UNKNOWN_SECTOR = "Unknown"
 FX_TICKERS = {"USD": "EURUSD=X", "INR": "EURINR=X", "EUR": None}
 MARKET_CCY = {"us": "USD", "de": "EUR", "in": "INR"}
+# exchange time zone and the end of its regular session (local time), plus 15
+# minutes for the closing auction and the data delay
+SESSION_CLOSE = {"us": ("America/New_York", 16, 15), "de": ("Europe/Berlin", 17, 45),
+                 "in": ("Asia/Kolkata", 15, 45)}
+STALE_WEEKDAYS = 2          # a market's prices this many sessions behind are stale
+TICKER_STALE_WEEKDAYS = 3   # a stock this far behind its market is skipped
 
 # config.json -> "backtest" (see atlas2/backtest.py and README "Backtest")
 BACKTEST_DEFAULTS = {
@@ -420,6 +427,69 @@ def technical_score(row: pd.Series, rs3m: float | None) -> tuple[float, list[str
     return min(score, 100.0), reasons
 
 
+def _exchange_now(market: str, now: datetime | None = None) -> datetime:
+    tz = ZoneInfo(SESSION_CLOSE[market][0])
+    now = now or datetime.now(timezone.utc)
+    return now.astimezone(tz)
+
+
+def _session_closed(market: str, local: datetime) -> bool:
+    _, h, m = SESSION_CLOSE[market]
+    return (local.hour, local.minute) >= (h, m)
+
+
+def drop_unfinished_bar(df: pd.DataFrame, market: str, now: datetime | None = None) -> pd.DataFrame:
+    """Yahoo's daily download includes TODAY's bar while the session is still
+    trading (India during the 07:30 CET scan; any market during a scan in its
+    trading day). Patterns, breakouts and closes must come from finished days, so a
+    bar dated today (exchange time) before the session's close is dropped."""
+    if df is None or df.empty or market not in SESSION_CLOSE:
+        return df
+    local = _exchange_now(market, now)
+    last = pd.Timestamp(df.index[-1]).date()
+    if last > local.date() or (last == local.date() and not _session_closed(market, local)):
+        return df.iloc[:-1]
+    return df
+
+
+def _weekdays_after(a: date, b: date) -> int:
+    """Weekdays strictly after a, up to and including b (0 when b <= a)."""
+    if b <= a:
+        return 0
+    return int(pd.bdate_range(a + timedelta(days=1), b).size)
+
+
+def last_finished_session(market: str, now: datetime | None = None) -> date:
+    """The latest weekday whose session has closed (exchange holidays not known)."""
+    local = _exchange_now(market, now)
+    d = local.date()
+    if d.weekday() < 5 and _session_closed(market, local):
+        return d
+    d -= timedelta(days=1)
+    while d.weekday() >= 5:
+        d -= timedelta(days=1)
+    return d
+
+
+def price_staleness(bench: pd.DataFrame | None, market: str,
+                    now: datetime | None = None) -> dict | None:
+    """None when the market's index has a bar for the last finished session (one
+    missing weekday is allowed: a holiday); otherwise what is wrong."""
+    expected = last_finished_session(market, now)
+    if bench is None or bench.empty:
+        return {"last_bar": None, "expected": expected.isoformat(),
+                "note": f"no {BENCHMARKS[market]} prices at all - the download failed"}
+    last = pd.Timestamp(bench.index[-1]).date()
+    behind = _weekdays_after(last, expected)
+    if behind < STALE_WEEKDAYS:
+        return None
+    return {"last_bar": last.isoformat(), "expected": expected.isoformat(),
+            "sessions_behind": behind,
+            "note": (f"the newest {BENCHMARKS[market]} bar is {last.isoformat()}, {behind} "
+                     f"sessions before {expected.isoformat()} - the price download probably "
+                     "failed; setups are based on old prices")}
+
+
 def scan_market(market: str, cfg: dict, progress=print) -> dict:
     universe = load_universe(market)
     tickers = universe["ticker"].tolist()
@@ -432,7 +502,12 @@ def scan_market(market: str, cfg: dict, progress=print) -> dict:
     progress(f"[{market}] refreshing prices for {len(tickers)} tickers + benchmark...")
     refresh_prices(store, tickers + [BENCHMARKS[market]],
                    progress=lambda done, total: progress(f"[{market}]   {done}/{total} downloaded"))
-    bench = store.load(BENCHMARKS[market])
+    bench = drop_unfinished_bar(store.load(BENCHMARKS[market]), market)
+    stale = price_staleness(bench, market)
+    if stale:
+        progress(f"[{market}] WARN {stale['note']}")
+    bench_last = pd.Timestamp(bench.index[-1]).date() if bench is not None and len(bench) else None
+    stale_skipped = []
     regime = market_regime(bench) if cfg.get("regime_filter", True) else {
         "status": "off", "note": "regime filter disabled", "risk_multiplier": 1.0}
     progress(f"[{market}] market regime: {regime['status']} - {regime['note']}")
@@ -479,7 +554,11 @@ def scan_market(market: str, cfg: dict, progress=print) -> dict:
     warnings = []
     skipped = 0
     for t in tickers:
-        df = store.load(t)
+        df = drop_unfinished_bar(store.load(t), market)
+        if bench_last is not None and len(df) and _weekdays_after(
+                pd.Timestamp(df.index[-1]).date(), bench_last) >= TICKER_STALE_WEEKDAYS:
+            stale_skipped.append(t)        # its prices stopped: never a setup on old bars
+            continue
         if len(df) < 120:
             skipped += 1
             continue
@@ -680,11 +759,20 @@ def scan_market(market: str, cfg: dict, progress=print) -> dict:
                        "after fees (or they are switched off in config.json); shown for study "
                        "only - not buy signals") if study_setups else None,
         "warnings": sorted(warnings, key=lambda w: w["ticker"]),
+        # None when the prices are current; else why the scan is based on old prices
+        "data_stale": stale,
+        # stocks whose prices stopped TICKER_STALE_WEEKDAYS+ sessions before the index's
+        "stale_skipped": sorted(stale_skipped),
     }
+    if stale_skipped:
+        progress(f"[{market}] skipped {len(stale_skipped)} stock(s) whose prices stopped "
+                 f"updating: {', '.join(sorted(stale_skipped)[:12])}"
+                 f"{' ...' if len(stale_skipped) > 12 else ''}")
+    from .backtest import write_json_atomic   # lazy: backtest imports scan
+
     out_dir = ROOT / "data" / "scans"
-    out_dir.mkdir(parents=True, exist_ok=True)
-    (out_dir / f"{market}_latest.json").write_text(json.dumps(result, indent=1))
-    (out_dir / f"{market}_{date.today().isoformat()}.json").write_text(json.dumps(result))
+    write_json_atomic(out_dir / f"{market}_latest.json", result, indent=1)
+    write_json_atomic(out_dir / f"{market}_{date.today().isoformat()}.json", result)
     store.close()
     held = f" ({n_capped} more held back by the sector cap)" if n_capped else ""
     study = f", {len(study_setups)} switched-off setups for study" if study_setups else ""

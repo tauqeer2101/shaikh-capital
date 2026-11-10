@@ -192,7 +192,7 @@ class RunMonitorStopAlertTest(unittest.TestCase):
         logged = [json.loads(x) for x in
                   (self.root / "data" / "alerts.jsonl").read_text().splitlines()]
         self.assertEqual(sorted(a["kind"] for a in logged), ["stop", "target", "time"])
-        self.assertEqual(self.run_monitor({"SYF": 70.0, "TGT": 13.2}), [])
+        self.assertEqual(self.run_monitor({"SYF": 70.0, "TGT": 13.2, "FINE": 10.5}), [])
 
     def test_days_past_stop_counts_from_the_first_logged_stop_alert(self):
         first = (self.today - timedelta(days=3)).isoformat() + "T10:05:00"
@@ -202,10 +202,17 @@ class RunMonitorStopAlertTest(unittest.TestCase):
             {"time": (self.today - timedelta(days=1)).isoformat() + "T10:05:00", "kind": "stop",
              "ticker": "SYF", "level": 76.51, "price": 74.0, "message": "old wording"},
         ])
-        alerts = self.run_monitor({"SYF": 71.55})
+        alerts = self.run_monitor({"SYF": 71.55, "TGT": 12.0, "FINE": 10.0})
         self.assertEqual([a["kind"] for a in alerts], ["stop"])
         self.assertEqual(alerts[0]["days_past_stop"], 3)
         self.assertEqual(alerts[0]["message"], SYF_MESSAGE)
+
+    def test_a_position_without_a_price_is_reported_not_skipped(self):
+        alerts = self.run_monitor({"SYF": 76.52, "TGT": 12.9})        # FINE: no price
+        self.assertEqual([(a["kind"], a["ticker"]) for a in alerts], [("unchecked", "FINE")])
+        self.assertEqual(self.notified[0][0], "Shaikh Capital — STOP NOT CHECKED")
+        self.assertIn("stop (9)", self.notified[0][1])
+        self.assertEqual(self.run_monitor({"SYF": 76.52, "TGT": 12.9}), [])   # once a day
 
     def test_no_stop_alert_above_the_stop(self):
         alerts = self.run_monitor({"SYF": 76.52, "TGT": 12.9, "FINE": 10.0})

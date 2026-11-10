@@ -73,7 +73,28 @@ def _latest_prices(tickers: list[str]) -> dict[str, float]:
                     pass
         except Exception:
             pass
+    # Yahoo drops tickers out of busy multi-ticker requests: what is still missing
+    # is asked for one at a time (a stop must not go unchecked over a hiccup)
+    for t in [t for t, p in out.items() if p is None]:
+        out[t] = _single_price(t)
     return {t: p for t, p in out.items() if p is not None}
+
+
+def _single_price(ticker: str) -> float | None:
+    for kw in ({"period": "2d", "interval": "15m"}, {"period": "5d", "interval": "1d"}):
+        try:
+            d = yf.download(ticker, progress=False, auto_adjust=True, threads=False, **kw)
+            if d is None or d.empty:
+                continue
+            close = d["Close"]
+            if hasattr(close, "columns"):        # (field, ticker) columns
+                close = close.iloc[:, 0]
+            close = close.dropna()
+            if len(close):
+                return float(close.iloc[-1])
+        except Exception:
+            continue
+    return None
 
 
 def _notify(title: str, message: str) -> None:
@@ -282,7 +303,13 @@ def run_monitor(force: bool = False, progress=print) -> list[dict]:
         path = ROOT / "data" / "scans" / f"{market}_latest.json"
         if not path.exists():
             continue
-        scan = json.loads(path.read_text())
+        try:
+            scan = json.loads(path.read_text())
+            scan["setups"]
+        except Exception as exc:     # a bad scan file must never block the stop checks
+            progress(f"WARN {path.name} unreadable ({exc.__class__.__name__}) - its entries "
+                     "are not watched this hour")
+            continue
         # sector-capped setups (G2) neither alert nor take a watch slot; the
         # Comeback scan has no such key, so .get leaves it unchanged
         watch = [s for s in scan["setups"] if s["grade"] in WATCH_GRADES
@@ -323,6 +350,25 @@ def run_monitor(force: bool = False, progress=print) -> list[dict]:
             fh.write(json.dumps(alert) + "\n")
         progress(f"ALERT time: {ta['message']}")
 
+    # an open position whose price could not be fetched: say so once a day - a
+    # silent gap here is a stop that nobody checks
+    for t in sorted({tr["ticker"] for tr in open_trades if prices.get(tr["ticker"]) is None}):
+        key = f"{date.today().isoformat()}:unchecked:{t}"
+        if key in fired:
+            continue
+        fired.add(key)
+        stops = sorted({float(tr["stop"]) for tr in open_trades if tr["ticker"] == t})
+        message = (f"{t}: no price from Yahoo - the stop ({', '.join(f'{x:g}' for x in stops)}) "
+                   "could not be checked. Check it in your broker.")
+        alert = {"time": now.isoformat(timespec="seconds"), "kind": "unchecked",
+                 "ticker": t, "level": stops[0] if stops else None, "price": None,
+                 "message": message}
+        alerts.append(alert)
+        _notify("Shaikh Capital — STOP NOT CHECKED", message)
+        with LOG_PATH.open("a") as fh:
+            fh.write(json.dumps(alert) + "\n")
+        progress(f"ALERT unchecked: {message}")
+
     for kind, ticker, level, message, trade in checks:
         price = prices.get(ticker)
         if price is None:
@@ -353,7 +399,9 @@ def run_monitor(force: bool = False, progress=print) -> list[dict]:
         progress(f"ALERT {kind}: {message} (now {price:g})")
 
     state["fired"] = sorted(fired)
-    STATE_PATH.write_text(json.dumps(state, indent=1))
+    tmp = STATE_PATH.with_name(STATE_PATH.name + ".tmp")
+    tmp.write_text(json.dumps(state, indent=1))
+    tmp.replace(STATE_PATH)
     if not alerts:
         progress("no alerts")
     return alerts

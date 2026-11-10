@@ -13,6 +13,8 @@ from pathlib import Path
 
 import yfinance as yf
 
+from .data import utcnow
+
 FIELDS = [
     "shortName", "sector", "industry", "marketCap", "currency",
     "trailingPE", "forwardPE", "priceToBook",
@@ -55,14 +57,14 @@ class FundamentalStore:
         if row is None:
             return None
         fetched = datetime.fromisoformat(row[0])
-        if datetime.utcnow() - fetched > timedelta(days=max_age_days):
+        if utcnow() - fetched > timedelta(days=max_age_days):
             return None
         return json.loads(row[1])
 
     def put(self, ticker: str, payload: dict) -> None:
         self.conn.execute(
             "INSERT OR REPLACE INTO fundamentals VALUES (?,?,?)",
-            (ticker, datetime.utcnow().isoformat(), json.dumps(payload)),
+            (ticker, utcnow().isoformat(), json.dumps(payload)),
         )
         self.conn.commit()
 
@@ -75,8 +77,8 @@ def fetch_next_earnings(store: FundamentalStore, ticker: str,
     ).fetchone()
     if row is not None:
         fetched = datetime.fromisoformat(row[0])
-        stale = datetime.utcnow() - fetched > timedelta(days=max_age_days)
-        past = row[1] is not None and row[1] < datetime.utcnow().date().isoformat()
+        stale = utcnow() - fetched > timedelta(days=max_age_days)
+        past = row[1] is not None and row[1] < utcnow().date().isoformat()
         if not stale and not past:
             return row[1]
     next_date = None
@@ -85,7 +87,7 @@ def fetch_next_earnings(store: FundamentalStore, ticker: str,
 
         cal = yf.Ticker(ticker).calendar or {}
         dates = cal.get("Earnings Date") or []
-        today = datetime.utcnow().date()
+        today = utcnow().date()
         future = sorted(d for d in dates if d >= today)
         if future:
             next_date = future[0].isoformat()
@@ -93,7 +95,7 @@ def fetch_next_earnings(store: FundamentalStore, ticker: str,
         pass
     store.conn.execute(
         "INSERT OR REPLACE INTO earnings VALUES (?,?,?)",
-        (ticker, datetime.utcnow().isoformat(), next_date),
+        (ticker, utcnow().isoformat(), next_date),
     )
     store.conn.commit()
     time.sleep(0.15)
@@ -108,7 +110,7 @@ def fetch_dividends(store: FundamentalStore, ticker: str,
         "SELECT fetched, payload FROM dividends WHERE ticker = ?", (ticker,)
     ).fetchone()
     if row is not None:
-        if datetime.utcnow() - datetime.fromisoformat(row[0]) <= timedelta(days=max_age_days):
+        if utcnow() - datetime.fromisoformat(row[0]) <= timedelta(days=max_age_days):
             return json.loads(row[1])
     payload: dict = {"yearly": {}, "ttm": 0.0}
     try:
@@ -118,19 +120,19 @@ def fetch_dividends(store: FundamentalStore, ticker: str,
         div = yf.Ticker(ticker).dividends
         if div is not None and len(div):
             div.index = div.index.tz_localize(None)
-            this_year = datetime.utcnow().year
+            this_year = utcnow().year
             by_year = div.groupby(div.index.year).sum()
             payload["yearly"] = {
                 str(int(y)): round(float(v), 4)
                 for y, v in by_year.items() if int(y) >= this_year - 5
             }
-            cutoff = pd.Timestamp(datetime.utcnow() - timedelta(days=365))
+            cutoff = pd.Timestamp(utcnow() - timedelta(days=365))
             payload["ttm"] = round(float(div[div.index >= cutoff].sum()), 4)
     except Exception:
         pass
     store.conn.execute(
         "INSERT OR REPLACE INTO dividends VALUES (?,?,?)",
-        (ticker, datetime.utcnow().isoformat(), json.dumps(payload)),
+        (ticker, utcnow().isoformat(), json.dumps(payload)),
     )
     store.conn.commit()
     time.sleep(0.15)
@@ -143,7 +145,7 @@ def dividend_summary(payload: dict, close: float) -> dict | None:
     ttm = payload.get("ttm") or 0.0
     if not yearly and not ttm:
         return None
-    this_year = str(datetime.utcnow().year)
+    this_year = str(utcnow().year)
     years = []
     for y in sorted(yearly):
         years.append({"year": y + (" (so far)" if y == this_year else ""),

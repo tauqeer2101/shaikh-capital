@@ -46,6 +46,9 @@ Commands:
                       really in the S&P 500 at the time, volatility-targeted
                       Nasdaq leverage, and rotation between markets
                       (data/strategy_lab2.json).
+  doctor [--quick]     check that everything runs: jobs, scans, prices, journal,
+                      backups, disk, packages; OK / WARN / FAIL per line
+                      (exit 1 on any FAIL).
   strategy-lab-3 [--offline] [--out PATH]
                       pre-registered swing-trade rules (dip buying, 52-week-high
                       momentum, tight-base breakouts) on the real past S&P 500
@@ -125,18 +128,13 @@ def main() -> None:
 
         print("Universe built:", build_universe(Path(__file__).resolve().parent.parent))
     elif cmd == "scan":
-        from .comeback import scan_comeback
-        from .scan import run_scan
+        from . import ops
 
+        ops.start_scheduled("scan.log")
         markets = [a for a in args[1:] if a in ("us", "de", "in")] or None
-        run_scan(markets)
-        scan_comeback()
-        try:                     # the Nasdaq signal tab; never lets a scan fail
-            from .leverage_signal import run_leverage_signal
-
-            run_leverage_signal()
-        except Exception as exc:
-            print(f"WARN Nasdaq signal not updated: {exc.__class__.__name__}: {exc}")
+        # backup, every market, Comeback and the Nasdaq signal, each isolated
+        # (see ops.run_daily_scan); exit 1 when any part failed
+        sys.exit(1 if ops.run_daily_scan(markets) else 0)
     elif cmd == "comeback":
         from .comeback import scan_comeback
 
@@ -191,9 +189,20 @@ def main() -> None:
 
         lab_data_main(args[1:])
     elif cmd == "monitor":
+        from . import ops
         from .monitor import run_monitor
 
-        run_monitor(force="--force" in args)
+        ops.start_scheduled("monitor.log")
+        try:
+            with ops.job("monitor"):
+                run_monitor(force="--force" in args)
+        finally:
+            # the 07:30 scan missed (Mac off / asleep) or failed: start it again
+            print(f"self-heal: {ops.self_heal()}")
+    elif cmd == "doctor":
+        from . import ops
+
+        sys.exit(ops.main_doctor(args[1:]))
     elif cmd == "serve":
         import uvicorn
 

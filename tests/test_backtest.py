@@ -1169,15 +1169,20 @@ class ScanMarketIntegrationTest(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.root = Path(self.tmp.name)
         store = PriceStore(self.root / "data" / "cache" / "prices.sqlite3")
+        # the stocks end on the index's last day (a stock whose prices stop
+        # earlier is skipped as stale - SYN2)
+        day = lambda k: str(pd.bdate_range("2018-01-01", periods=k + 1)[-1].date())
         frames = {"^GSPC": random_frame(1, n=400, price=3000, drift=0.0006, vol=0.006),
-                  "SYN0": random_frame(2, n=300), "SYN1": random_frame(3, n=310)}
+                  "SYN0": random_frame(2, n=300, start=day(100)),
+                  "SYN1": random_frame(3, n=310, start=day(90)),
+                  "SYN2": random_frame(4, n=200)}
         rows = [(t, d.strftime("%Y-%m-%d"), float(r.open), float(r.high), float(r.low),
                  float(r.close), float(r.volume)) for t, df in frames.items() for d, r in df.iterrows()]
         store.conn.executemany("INSERT OR REPLACE INTO bars VALUES (?,?,?,?,?,?,?)", rows)
         store.conn.commit()
         store.close()
         (self.root / "universe").mkdir()
-        pd.DataFrame({"ticker": ["SYN0", "SYN1"], "name": ["Zero", "One"],
+        pd.DataFrame({"ticker": ["SYN0", "SYN1", "SYN2"], "name": ["Zero", "One", "Two"],
                       "index": "TEST"}).to_csv(self.root / "universe" / "us.csv", index=False)
         common = {"win_rate": 50.0, "avg_r": 0.3, "excess_vs_index_pct": 0.5,
                   "excess_vs_universe_pct": 0.5, "excess_vs_universe_ci95": [0.2, 0.8]}
@@ -1226,6 +1231,8 @@ class ScanMarketIntegrationTest(unittest.TestCase):
         res = self.scan(cfg)
         by = {s_["ticker"]: s_ for s_ in res["setups"]}
         self.assertEqual(set(by), {"SYN0", "SYN1"})
+        self.assertEqual(res["stale_skipped"], ["SYN2"])      # its prices stopped in 2018
+        self.assertIsNotNone(res["data_stale"])               # the synthetic index ends in 2019
         self.assertNotIn("bull_flag", {s_["pattern"] for s_ in res["setups"]})
         self.assertEqual(by["SYN0"]["pattern"], "double_bottom")      # runner-up, as the backtest
         self.assertEqual(by["SYN0"]["other_patterns"], [])

@@ -5,8 +5,10 @@ Read-only. Serves the latest scan JSON per market and per-ticker chart data
 """
 from __future__ import annotations
 
+import hmac
 import json
 import sqlite3
+import time
 from datetime import date
 from pathlib import Path
 
@@ -62,6 +64,22 @@ LOGIN_HTML = """<!DOCTYPE html><html><head><meta charset="utf-8">
 </form></body></html>"""
 
 
+# wrong passwords per client address: after LOGIN_MAX_FAILS within LOGIN_WINDOW_S
+# the login answers 429 until the window has passed (the dashboard can be public)
+LOGIN_MAX_FAILS = 10
+LOGIN_WINDOW_S = 900
+_LOGIN_FAILS: dict[str, list[float]] = {}
+
+
+def _recent_fails(ip: str, now: float) -> list[float]:
+    fails = [t for t in _LOGIN_FAILS.get(ip, []) if now - t < LOGIN_WINDOW_S]
+    if fails:
+        _LOGIN_FAILS[ip] = fails
+    else:
+        _LOGIN_FAILS.pop(ip, None)
+    return fails
+
+
 def _dashboard_password() -> str | None:
     try:
         cfg = json.loads((ROOT / "config.json").read_text())
@@ -78,16 +96,25 @@ async def auth_middleware(request, call_next):
     if not pw:
         return await call_next(request)
     token = hashlib.sha256(("sc:" + pw).encode()).hexdigest()
-    if request.cookies.get("sc_auth") == token:
+    if hmac.compare_digest((request.cookies.get("sc_auth") or "").encode(), token.encode()):
         return await call_next(request)
     if request.url.path == "/login":
         if request.method == "POST":
+            ip = request.client.host if request.client else "?"
+            now = time.time()
+            fails = _recent_fails(ip, now)
+            if len(fails) >= LOGIN_MAX_FAILS:
+                return HTMLResponse(LOGIN_HTML.replace(
+                    "<!--msg-->", "Too many wrong passwords — try again in 15 minutes."),
+                    status_code=429)
             form = await request.form()
-            if form.get("password") == pw:
+            if hmac.compare_digest(str(form.get("password") or "").encode(), pw.encode()):
+                _LOGIN_FAILS.pop(ip, None)
                 resp = RedirectResponse("/", status_code=303)
                 resp.set_cookie("sc_auth", token, max_age=180 * 24 * 3600,
                                 httponly=True, samesite="lax")
                 return resp
+            _LOGIN_FAILS[ip] = fails + [now]
             return HTMLResponse(
                 LOGIN_HTML.replace("<!--msg-->", "Wrong password — try again."),
                 status_code=401)
@@ -100,6 +127,27 @@ async def auth_middleware(request, call_next):
 @app.get("/")
 def index():
     return FileResponse(STATIC / "index.html")
+
+
+_HEALTH_CACHE: dict = {}
+HEALTH_TTL_S = 60
+
+
+@app.get("/api/health")
+def health():
+    """ops.doctor's quick checks (scans, jobs, backup, journal, disk), cached 60 s."""
+    from . import ops
+
+    now = time.time()
+    if _HEALTH_CACHE.get("at", 0) > now - HEALTH_TTL_S:
+        return JSONResponse(_HEALTH_CACHE["body"])
+    try:
+        body = ops.summary(ops.doctor(quick=True, progress=lambda *a: None))
+    except Exception as exc:
+        body = {"status": "fail", "items": [{"level": "FAIL", "check": "health",
+                                             "detail": f"{exc.__class__.__name__}: {exc}"}]}
+    _HEALTH_CACHE.update(at=now, body=body)
+    return JSONResponse(body)
 
 
 @app.get("/api/scan/{market}")

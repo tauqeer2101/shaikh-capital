@@ -215,6 +215,19 @@
                      border: 1px solid var(--border); font-weight: 600; vertical-align: middle;
                      cursor: help; }
   .capnote { font-size: 11px; color: var(--faint); margin-top: 2px; }
+  /* system health: a chip in the header, a banner when something is wrong */
+  .hchip { font-size: 12px; padding: 5px 10px; border-radius: 10px; cursor: pointer;
+           border: 1px solid var(--border); background: var(--panel); color: var(--dim);
+           white-space: nowrap; }
+  .hchip.ok { color: var(--green); }
+  .hchip.warn { color: var(--amber); border-color: var(--amber); }
+  .hchip.fail { color: var(--red); border-color: var(--red); background: var(--red-bg); }
+  #healthbar { margin: 10px 20px 0; padding: 10px 14px; border-radius: 12px; font-size: 13px;
+               border: 1px solid var(--red); background: var(--red-bg); }
+  #healthbar.warn { border-color: var(--amber); background: var(--amber-bg); }
+  #healthbar.ok { border-color: var(--border); background: var(--panel); }
+  #healthbar ul { margin: 6px 0 0; padding-left: 18px; }
+  #healthbar li { margin: 2px 0; }
   /* setups of switched-off patterns: shown for study only, never alerted */
   tr.row.study { opacity: .6; }
   tr.row.study:hover, tr.row.study.sel { opacity: .9; }
@@ -373,11 +386,13 @@
     <div id="sr"></div>
   </div>
   <div class="hgroup">
+    <span class="hchip" id="hchip" onclick="toggleHealth()" title="System health">⏳ checking…</span>
     <button class="hbtn" id="themebtn" onclick="toggleTheme()" title="Switch light/dark mode">🌙</button>
     <button class="hbtn" onclick="el('helpmodal').style.display='grid'">❓ How it works</button>
   </div>
 </header>
 
+<div id="healthbar" hidden></div>
 <div id="overview"></div>
 
 <main>
@@ -502,6 +517,43 @@ async function switchMarket(m) {
 }
 
 /* ---------- overview strip ---------- */
+/* system health: ops.doctor's quick checks via /api/health; a problem always
+   shows as a banner, the full list when the header chip is clicked */
+let healthData = null, healthOpen = false;
+async function loadHealth() {
+  try {
+    const r = await fetch("/api/health");
+    if (r.status === 401) return;
+    if (!r.ok) throw new Error(r.status);
+    healthData = await r.json();
+  } catch (e) {
+    healthData = { status: "fail", items: [{ level: "FAIL", check: "dashboard",
+      detail: "the health check did not answer" }] };
+  }
+  renderHealth();
+}
+function renderHealth() {
+  const d = healthData, chip = el("hchip"), bar = el("healthbar");
+  if (!d || !chip || !bar) return;
+  const bad = (d.items || []).filter(x => x.level !== "OK");
+  const label = { ok: "✓ System OK", warn: "⚠ Check system", fail: "⛔ System problem" };
+  chip.className = "hchip " + d.status;
+  chip.textContent = label[d.status] || d.status;
+  chip.title = bad.length ? bad.map(x => `${x.check}: ${x.detail}`).join("\n")
+                          : "Scans, jobs, backups and the journal all look fine";
+  const show = d.status === "fail" || healthOpen;
+  bar.hidden = !show;
+  if (!show) return;
+  const rows = (healthOpen ? d.items : bad) || [];
+  bar.className = d.status === "fail" ? "" : d.status;
+  bar.innerHTML = `<b>${d.status === "fail" ? "⛔ Something needs attention" : d.status === "warn"
+      ? "⚠ Worth a look" : "✓ Everything checked out"}</b>
+    <span class="faint" style="font-size:11px"> · checked ${escH(String(d.checked || "").slice(11, 16))}
+    · <code>python -m atlas2 doctor</code> runs the full check</span>
+    <ul>${rows.map(x => `<li><b>${escH(x.level)}</b> ${escH(x.check)} — ${escH(x.detail)}</li>`).join("")}</ul>`;
+}
+function toggleHealth() { healthOpen = !healthOpen; renderHealth(); }
+
 async function loadOverview() {
   try {
     const d = await (await fetch("/api/scans")).json();
@@ -1134,7 +1186,7 @@ function renderAlerts(alerts, open = []) {
   const openIds = new Set(open.map(t => t.id));
   const openTickers = new Set(open.map(t => t.ticker));
   const stillOpen = a => a.trade_id != null ? openIds.has(a.trade_id) : openTickers.has(a.ticker);
-  const icon = { stop: "🔴", target: "🟢", entry: "🔵", time: "⏰" };
+  const icon = { stop: "🔴", target: "🟢", entry: "🔵", time: "⏰", unchecked: "❓" };
   el("detail").innerHTML = `
     <h3 style="margin-top:4px">Recent alerts</h3>
     ${alerts.slice(0, 25).map(a => `
@@ -2171,7 +2223,8 @@ document.addEventListener("click", e => {
   if (!e.target.closest(".search")) el("sr").style.display = "none";
 });
 
-themeIcon(); tabs(); loadOverview(); loadScan();
+themeIcon(); tabs(); loadOverview(); loadScan(); loadHealth();
+setInterval(loadHealth, 5 * 60 * 1000);
 </script>
 </body>
 </html>
