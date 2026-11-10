@@ -105,6 +105,9 @@ def load_config(cfg_path: Path | None = None) -> dict:
         "min_risk_reward": 1.8,
         "max_position_pct": 25.0,
         "shortlist_size": 45,
+        # how many setups of switched-off patterns the dashboard shows for study
+        # (0 = none); they are never alerted and never count as setups
+        "study_shortlist_size": 25,
         "markets": ["us", "de", "in"],
         "regime_filter": True,
         "earnings_warn_days": 7,
@@ -472,6 +475,7 @@ def scan_market(market: str, cfg: dict, progress=print) -> dict:
     max_pos_local = capital_local * cfg["max_position_pct"] / 100
 
     candidates = []
+    study_candidates = []     # setups of switched-off patterns, kept apart (shown for study only)
     warnings = []
     skipped = 0
     for t in tickers:
@@ -486,8 +490,8 @@ def scan_market(market: str, cfg: dict, progress=print) -> dict:
         rs3m = relative_strength_3m(df, bench)
         tscore, reasons = technical_score(last, rs3m)
         hits = detect_all(df)
-        bullish = [h for h in hits
-                   if h.direction == "bullish" and h.pattern not in disabled_patterns]
+        bullish_all = [h for h in hits if h.direction == "bullish"]
+        bullish = [h for h in bullish_all if h.pattern not in disabled_patterns]
         bearish = [h for h in hits if h.direction == "bearish"]
         for h in bearish:
             if h.confidence >= 0.55:
@@ -496,30 +500,45 @@ def scan_market(market: str, cfg: dict, progress=print) -> dict:
                     "status": h.status, "breakdown_level": h.stop if False else h.entry,
                     "note": h.note, "close": round(float(last["close"]), 2),
                 })
-        if not bullish or tscore < 40:
+        if tscore < 40:
             continue
-        best = max(bullish, key=lambda h: (h.confidence, h.risk_reward or 0))
-        rr = best.risk_reward
-        if rr is None or rr < cfg["min_risk_reward"]:
-            continue
-        candidates.append({
-            "ticker": t, "df_len": len(df), "tscore": tscore, "reasons": reasons,
-            "hit": best, "rs3m": rs3m, "last": last, "all_bullish": bullish,
-            # pattern anchor points as (date, price) so the dashboard can draw
-            # the detected pattern on the chart
-            "key_dates": [[str(df.index[i])[:10], float(p)] for i, p in best.key_points],
-            "start_date": str(df.index[best.start_idx])[:10],
-        })
+        # the same filters for both lists; a stock goes to the study list only when no
+        # switched-on pattern qualifies on its chart
+        for pool, target, study in (
+                (bullish, candidates, False),
+                ([h for h in bullish_all if h.pattern in disabled_patterns], study_candidates, True)):
+            if not pool:
+                continue
+            best = max(pool, key=lambda h: (h.confidence, h.risk_reward or 0))
+            rr = best.risk_reward
+            if rr is None or rr < cfg["min_risk_reward"]:
+                continue
+            target.append({
+                "ticker": t, "df_len": len(df), "tscore": tscore, "reasons": reasons,
+                "hit": best, "rs3m": rs3m, "last": last, "all_bullish": pool, "study": study,
+                # pattern anchor points as (date, price) so the dashboard can draw
+                # the detected pattern on the chart
+                "key_dates": [[str(df.index[i])[:10], float(p)] for i, p in best.key_points],
+                "start_date": str(df.index[best.start_idx])[:10],
+            })
+            break
 
     warned_tickers = {w["ticker"] for w in warnings}
     progress(f"[{market}] {len(candidates)} technical candidates; fetching fundamentals for top {cfg['shortlist_size']}...")
     candidates.sort(key=lambda c: (c["hit"].confidence * 50 + c["tscore"]), reverse=True)
     shortlist = candidates[: cfg["shortlist_size"]]
+    study_candidates.sort(key=lambda c: (c["hit"].confidence * 50 + c["tscore"]), reverse=True)
+    study_shortlist = study_candidates[: max(0, int(cfg.get("study_shortlist_size", 25)))]
+    if study_shortlist:
+        progress(f"[{market}] {len(study_candidates)} more candidates from switched-off patterns; "
+                 f"top {len(study_shortlist)} kept for study (never alerted)")
+    off_reasons = tuning_info.get("reasons") or {}
 
     regime_risk = risk_local * regime["risk_multiplier"]
 
     setups = []
-    for c in shortlist:
+    study_setups = []
+    for c in shortlist + study_shortlist:
         t = c["ticker"]
         f = fetch_fundamentals(fstore, t)
         fscore, fcomponents = score_fundamentals(f)
@@ -567,7 +586,15 @@ def scan_market(market: str, cfg: dict, progress=print) -> dict:
                            f"to {regime['risk_multiplier']:.0%} of normal risk")
         if conflicted:
             reasons.append("caution: a bearish pattern is also present on this chart (see warnings)")
-        setups.append({
+        off_why = None
+        if c["study"]:
+            manual_off = hit.pattern in tuning_info["manual"]
+            off_why = ("switched off manually in config.json (pattern_tuning.disabled)" if manual_off
+                       else off_reasons.get(hit.pattern)
+                       or f"the backtest's verdict: {bt_verdicts.get(hit.pattern, 'no edge')}")
+            reasons.insert(0, "⛔ switched off - " + ("" if manual_off else "the backtest found: ")
+                           + off_why)
+        (study_setups if c["study"] else setups).append({
             "ticker": t,
             "name": names.get(t, t),
             "market_index": indices.get(t, ""),
@@ -614,9 +641,11 @@ def scan_market(market: str, cfg: dict, progress=print) -> dict:
             "pattern_start": c["start_date"],
             "sector": (f or {}).get("sector"),
             "other_patterns": [h.pattern for h in c["all_bullish"] if h is not hit],
+            **({"switched_off": True, "switched_off_reason": off_why} if c["study"] else {}),
         })
 
     setups.sort(key=lambda s: s["composite_score"], reverse=True)
+    study_setups.sort(key=lambda s: s["composite_score"], reverse=True)
     max_per_sector = sector_cap(cfg.get("max_per_sector", MAX_PER_SECTOR_DEFAULT))
     sector_counts = apply_sector_cap(setups, max_per_sector, market)
     n_capped = sum(1 for s in setups if s["sector_capped"])
@@ -644,6 +673,12 @@ def scan_market(market: str, cfg: dict, progress=print) -> dict:
         "sector_counts": sector_counts,
         "max_per_sector": max_per_sector,
         "setups": setups,
+        # setups of switched-off patterns, for study: shown greyed in the dashboard,
+        # never alerted by the monitor and never counted as setups
+        "study_setups": study_setups,
+        "study_note": ("these patterns are switched off because the backtest found no edge "
+                       "after fees (or they are switched off in config.json); shown for study "
+                       "only - not buy signals") if study_setups else None,
         "warnings": sorted(warnings, key=lambda w: w["ticker"]),
     }
     out_dir = ROOT / "data" / "scans"
@@ -652,7 +687,8 @@ def scan_market(market: str, cfg: dict, progress=print) -> dict:
     (out_dir / f"{market}_{date.today().isoformat()}.json").write_text(json.dumps(result))
     store.close()
     held = f" ({n_capped} more held back by the sector cap)" if n_capped else ""
-    progress(f"[{market}] done: {len(setups) - n_capped} setups{held}, "
+    study = f", {len(study_setups)} switched-off setups for study" if study_setups else ""
+    progress(f"[{market}] done: {len(setups) - n_capped} setups{held}{study}, "
              f"{len(warnings)} bearish warnings")
     return result
 

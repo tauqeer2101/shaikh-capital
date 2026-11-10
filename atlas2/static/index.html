@@ -215,6 +215,14 @@
                      border: 1px solid var(--border); font-weight: 600; vertical-align: middle;
                      cursor: help; }
   .capnote { font-size: 11px; color: var(--faint); margin-top: 2px; }
+  /* setups of switched-off patterns: shown for study only, never alerted */
+  tr.row.study { opacity: .6; }
+  tr.row.study:hover, tr.row.study.sel { opacity: .9; }
+  .chip.studyoff { display: inline-block; margin-left: 6px; font-size: 10px; padding: 1px 7px;
+                   border-radius: 10px; background: var(--red-bg); color: var(--red);
+                   font-weight: 600; vertical-align: middle; cursor: help; }
+  .studyhead { padding: 16px 12px 2px; }
+  .studyhead .faint { font-size: 11px; display: block; margin-top: 3px; }
   .exitbadge { display: inline-block; background: var(--red); color: #fff; font-weight: 700;
                font-size: 10.5px; padding: 2px 8px; border-radius: 10px; margin-left: 6px;
                letter-spacing: .02em; vertical-align: middle; white-space: nowrap; }
@@ -451,6 +459,9 @@ const statusLabel = s => s === "forming" ? "watching" : "breakout";
 /* the time exit to trade (config backtest.max_hold, which the monitor enforces);
    no fall-back, so old scan files and strategies without one (Comeback) show
    nothing wrong. exit_rule.backtest_max_hold_days is the one the stored backtest used. */
+/* every clickable row of the list: the real setups first, then the switched-off
+   patterns' setups kept for study (index = position in this list) */
+const listRows = () => scanData ? scanData.setups.concat(scanData.study_setups || []) : [];
 const maxHold = () => { const n = scanData?.exit_rule?.max_hold_days; return Number.isFinite(n) ? n : null; };
 const escH = s => String(s ?? "").replace(/[&<>"']/g,
   c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -500,7 +511,7 @@ async function loadOverview() {
           ${s.regime && s.regime !== "unknown"
             ? `<span class="chip ${s.regime}">${REGIME_ICON[s.regime] ?? ""} ${s.regime}</span>` : ""}</div>
         <div class="nums">
-          <span><b>${s.setups}</b> setups${s.capped ? `<span class="faint" title="held back by the sector cap"> +${s.capped} capped</span>` : ""}</span>
+          <span><b>${s.setups}</b> setups${s.capped ? `<span class="faint" title="held back by the sector cap"> +${s.capped} capped</span>` : ""}${s.study ? `<span class="faint" title="setups of patterns the backtest switched off - for study only, not buy signals"> +${s.study} for study</span>` : ""}</span>
           <span><b>${s.a_grades}</b> A-grade</span>
           <span><b>${s.warnings}</b> warnings</span>
         </div>
@@ -532,7 +543,7 @@ async function loadScan() {
   scanData = await r.json();
   syncHelpCap(scanData);
   renderList();
-  if (scanData.setups.length) select(0);
+  if (listRows().length) select(0);
   else el("detail").innerHTML = `<div class="empty">${emptyText(true)}</div>`;
 }
 
@@ -616,10 +627,12 @@ function regimeBanner() {
 function setupRow(s, i) {
   const capped = !!s.sector_capped;
   const note = escH(s.sector_cap_note || "sector full");
+  const off = !!s.switched_off;
+  const offNote = escH(s.switched_off_reason || "switched off - no edge after fees");
   return `
-    <tr class="row${capped ? " capped" : ""}" id="r${i}" onclick="select(${i})">
+    <tr class="row${capped ? " capped" : ""}${off ? " study" : ""}" id="r${i}" onclick="select(${i})">
       <td><span class="grade ${s.grade}">${s.grade}</span></td>
-      <td><div class="tick">${s.market ? (FLAG[s.market] ?? "") + " " : ""}${s.ticker}${s.earnings_soon ? ' <span class="ewarn" title="earnings in '+s.earnings_in_days+' day(s) — gap risk">⚠E</span>' : ''}${capped ? `<span class="chip sectorfull" title="${note}">sector full</span>` : ""}</div>
+      <td><div class="tick">${s.market ? (FLAG[s.market] ?? "") + " " : ""}${s.ticker}${s.earnings_soon ? ' <span class="ewarn" title="earnings in '+s.earnings_in_days+' day(s) — gap risk">⚠E</span>' : ''}${capped ? `<span class="chip sectorfull" title="${note}">sector full</span>` : ""}${off ? `<span class="chip studyoff" title="${offNote}">switched off</span>` : ""}</div>
           <div class="dim" style="font-size:11px">${s.name}</div>${capped ? `<div class="capnote">${note}</div>` : ""}</td>
       <td>${s.pattern.replaceAll("_"," ")}<br><span class="status ${s.status}">${statusLabel(s.status)}</span></td>
       <td class="dim">${fmt(s.close)}</td>
@@ -640,6 +653,9 @@ function setupCountText(setups) {
 
 function renderList() {
   const rows = scanData.setups.map(setupRow).join("");
+  const study = scanData.study_setups || [];
+  const n0 = scanData.setups.length;
+  const studyRows = study.map((s, j) => setupRow(s, n0 + j)).join("");
   const warns = scanData.warnings.length ? `
     <div class="section-head"><h3>⚠ Bearish warnings (${scanData.warnings.length})</h3>
       <span class="faint" style="font-size:11px">charts that look like they may fall — don't buy; review if you own them</span></div>
@@ -662,11 +678,22 @@ function renderList() {
       <th title="potential reward vs. risk">R:R</th><th>Score</th>
     </tr></thead><tbody>${rows}</tbody></table>
     ${scanData.setups.length ? "" : `<div class="empty">${emptyText(false)}</div>`}
+    ${study.length ? `<div class="section-head studyhead"><h3>🧪 Switched off by the backtest — for study (${study.length})
+      <span class="faint plain">${escH(scanData.study_note || "these patterns found no edge after fees; not buy signals")}.
+      Click one to see the pattern on its chart, its buy-above / stop / target levels and the company's financials.
+      These never trigger alerts.</span></h3></div>
+    <table><tbody>${studyRows}</tbody></table>` : ""}
     ${warns}`;
 }
 
 /* ---------- setup detail ---------- */
 function actionBox(s) {
+  if (s.switched_off) return `<div class="action avoid"><b>🧪 For study only — not a buy signal</b>
+    The backtest switched this pattern off in ${MARKETS[current]}: ${escH(s.switched_off_reason || "no edge after fees")}.
+    In the past, trades from this pattern did not make money after fees, so the system does not suggest
+    buying it and sends no alert. The levels below are what the pattern itself implies — the price it would
+    have to break (${fmt(s.entry)} ${s.currency}), the stop under the pattern (${fmt(s.stop)}) and its
+    measured target (${fmt(s.target)}) — shown so you can study it, not as a trade plan.</div>`;
   const regime = scanData?.regime?.status;
   if (regime === "downtrend")
     return `<div class="action avoid"><b>🔴 Best to wait</b>
@@ -714,7 +741,8 @@ async function select(i) {
   sel = i;
   document.querySelectorAll("tr.row").forEach(r => r.classList.remove("sel"));
   const rowEl = el("r"+i); if (rowEl) rowEl.classList.add("sel");
-  const s = scanData.setups[i];
+  const s = listRows()[i];
+  const off = !!s.switched_off;
   el("detail").innerHTML = `
     <h2>${s.ticker} <span class="dim" style="font-weight:400">${s.name}</span>
       <span class="grade ${s.grade}" style="margin-left:6px">${s.grade}</span></h2>
@@ -738,11 +766,13 @@ async function select(i) {
         <div class="v">1 : ${fmt(s.risk_reward,1)}</div></div>
       ${maxHold() ? `<div class="lvl"><div class="k" title="the backtest sells at this close if neither stop nor target was hit">Time exit</div>
         <div class="v">${maxHold()} trading days</div><div class="s">sell at the close if stop/target not hit</div></div>` : ""}
-      <div class="lvl"><div class="k" title="sized so one loss ≈ 1% of your capital">Suggested size</div>
+      ${off ? `<div class="lvl"><div class="k" title="switched-off patterns get no position size">Suggested size</div>
+        <div class="v">—</div><div class="s">none: switched off</div></div>`
+      : `<div class="lvl"><div class="k" title="sized so one loss ≈ 1% of your capital">Suggested size</div>
         <div class="v">${fmt(s.position.shares,0)} sh</div>
-        <div class="s">≈ €${fmt(s.position.cost_eur,0)} · max loss €${fmt(s.position.risk_eur,0)}</div></div>
+        <div class="s">≈ €${fmt(s.position.cost_eur,0)} · max loss €${fmt(s.position.risk_eur,0)}</div></div>`}
     </div>
-    <h3>Why the system likes it</h3>
+    <h3>${off ? "What the chart shows" : "Why the system likes it"}</h3>
     <ul class="reasons">${s.reasons.map(r => `<li>${r}</li>`).join("")}</ul>
     <h3>Scores</h3>
     <div class="fundgrid">
@@ -804,7 +834,7 @@ async function loadNews(ticker) {
 }
 
 async function showLogForm() {
-  const s = scanData.setups[sel];
+  const s = listRows()[sel];
   // Pre-fill with a REALISTIC fill. For an already-broken-out stock that is the
   // LIVE latest price fetched from the server right now (never a stale page
   // snapshot or the lower breakout level) — otherwise the journal starts with
@@ -868,7 +898,7 @@ async function sectorWarning() {
 }
 
 async function submitLog() {
-  const s = scanData.setups[sel];
+  const s = listRows()[sel];
   const body = {
     ticker: s.ticker, name: s.name, market: s.market ?? current, currency: s.currency,
     pattern: s.pattern, grade: s.grade,

@@ -125,6 +125,7 @@ def scans_available():
                 "setups": len(active),
                 "a_grades": sum(1 for s in active if s["grade"] == "A"),
                 "capped": len(d["setups"]) - len(active),
+                "study": len(d.get("study_setups") or []),
                 "warnings": len(d["warnings"]),
                 "regime": d.get("regime", {}).get("status", "unknown"),
                 "top": None if top is None else {

@@ -1272,6 +1272,44 @@ class ScanMarketIntegrationTest(unittest.TestCase):
         self.assertFalse(pt["all_judged_disabled"])
         self.assertTrue(any("no backtest for this market - nothing is tuned" in m for m in msgs))
 
+    def test_switched_off_setups_are_kept_apart_for_study(self):
+        cfg = scan._deep_merge(scan.load_config(self.root / "no-config.json"),
+                               {"pattern_tuning": {"min_trades": 50}})
+        res = self.scan(cfg)
+        # SYN0 has a switched-on pattern (double_bottom): a real setup, never also a study one
+        self.assertEqual(res["study_setups"], [])
+        self.assertIsNone(res["study_note"])
+        self.assertFalse(any(s_.get("switched_off") for s_ in res["setups"]))
+
+        cfg = scan._deep_merge(cfg, {"pattern_tuning": {"min_trades": 30, "min_avg_r": 0.35}})
+        msgs: list[str] = []
+        res = self.scan(cfg, msgs)
+        self.assertEqual(res["setups"], [])                 # nothing switched on qualifies
+        by = {s_["ticker"]: s_ for s_ in res["study_setups"]}
+        self.assertEqual(set(by), {"SYN0", "SYN1"})
+        self.assertEqual(by["SYN0"]["pattern"], "bull_flag")            # its best, switched off
+        self.assertEqual(by["SYN1"]["pattern"], "ascending_triangle")
+        for s_ in by.values():
+            self.assertTrue(s_["switched_off"])
+            self.assertTrue(s_["switched_off_reason"])
+            self.assertTrue(s_["reasons"][0].startswith("⛔ switched off - the backtest found: "))
+            self.assertNotIn("sector_capped", s_)                       # the cap is for setups
+            for k in ("entry", "stop", "target", "fundamental_components", "key_points"):
+                self.assertIn(k, s_)
+        self.assertIn("not buy signals", res["study_note"])
+        self.assertTrue(any("kept for study" in m for m in msgs))
+        saved = json.loads((self.root / "data" / "scans" / "us_latest.json").read_text())
+        self.assertEqual(len(saved["study_setups"]), 2)
+
+        # a manual switch-off is named as such, and the list can be turned off
+        res = self.scan(scan._deep_merge(cfg, {"pattern_tuning": {
+            "min_avg_r": -9, "disabled": {"us": ["ascending_triangle"]}}}))
+        study = {s_["ticker"]: s_ for s_ in res["study_setups"]}
+        self.assertEqual(set(study), {"SYN1"})
+        self.assertIn("manually in config.json", study["SYN1"]["switched_off_reason"])
+        self.assertEqual(self.scan(scan._deep_merge(cfg, {"study_shortlist_size": 0}))
+                         ["study_setups"], [])
+
 
 class ConfigTest(unittest.TestCase):
     def test_partial_user_config_keeps_nested_defaults(self):
