@@ -33,6 +33,15 @@ Commands:
                       data/cache/lab_series.sqlite3 and reused; --offline never
                       touches the network (fails if that cache is missing),
                       --refresh downloads them again.
+  lab-data [--refresh]
+                      download past and present S&P 500 members' prices for
+                      strategy-lab-2 into data/cache/lab_sp500.sqlite3 (never
+                      the scanner's cache); slow on purpose.
+  strategy-lab-2 [--offline] [--out PATH]
+                      pre-registered follow-up lab: momentum on the stocks
+                      really in the S&P 500 at the time, volatility-targeted
+                      Nasdaq leverage, and rotation between markets
+                      (data/strategy_lab2.json).
 """
 from __future__ import annotations
 
@@ -150,6 +159,14 @@ def main() -> None:
         from .strategy_lab import main as strategy_lab_main
 
         strategy_lab_main(args[1:])
+    elif cmd == "strategy-lab-2":
+        from .strategy_lab2 import main as strategy_lab2_main
+
+        strategy_lab2_main(args[1:])
+    elif cmd == "lab-data":
+        from .lab_data import main as lab_data_main
+
+        lab_data_main(args[1:])
     elif cmd == "monitor":
         from .monitor import run_monitor
 
