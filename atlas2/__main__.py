@@ -46,6 +46,11 @@ Commands:
                       really in the S&P 500 at the time, volatility-targeted
                       Nasdaq leverage, and rotation between markets
                       (data/strategy_lab2.json).
+  strategy-lab-3 [--offline] [--out PATH]
+                      pre-registered swing-trade rules (dip buying, 52-week-high
+                      momentum, tight-base breakouts) on the real past S&P 500
+                      members, judged with NO costs against 40%/yr, an
+                      after-cost figure beside it (data/strategy_lab3.json).
 """
 from __future__ import annotations
 
@@ -173,6 +178,10 @@ def main() -> None:
         from .strategy_lab2 import main as strategy_lab2_main
 
         strategy_lab2_main(args[1:])
+    elif cmd == "strategy-lab-3":
+        from .strategy_lab3 import main as strategy_lab3_main
+
+        strategy_lab3_main(args[1:])
     elif cmd == "leverage-signal":
         from .leverage_signal import main as leverage_signal_main
 
