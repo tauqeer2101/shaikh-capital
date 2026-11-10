@@ -362,7 +362,7 @@ def v_period(dates: np.ndarray, res: dict, i0: int, i1: int) -> dict:
 
 def run_vol_account(fund_ret: np.ndarray, cash_ret: np.ndarray, sig: np.ndarray, i_open: int,
                     i_end: int, *, cost: float = V_ACCOUNT_COST,
-                    tax_exemption: float | None = None) -> np.ndarray:
+                    tax_exemption: float | None = None, return_holdings: bool = False):
     """How an investor would run the rule: a 3x daily-reset Nasdaq-100 fund and
     T-bills. 1.0 in cash at the close of i_open, bought at once into L/3 fund
     and the rest T-bills (L = sig[i_open-1], the signal of the previous close),
@@ -371,7 +371,8 @@ def run_vol_account(fund_ret: np.ndarray, cash_ret: np.ndarray, sig: np.ndarray,
     traded value (T-bills count as a fund). With tax_exemption set (the fund's
     partial exemption; T-bills get none) the TaxBook estimate is paid at every
     trade and on selling everything at i_end. Returns the equity (1.0 at i_open,
-    NaN outside i_open..i_end)."""
+    NaN outside i_open..i_end); with return_holdings, (equity, [fund, T-bills]
+    held at the close of i_end)."""
     n = len(fund_ret)
     if not (np.isfinite(fund_ret[i_open + 1:i_end + 1]).all()
             and np.isfinite(cash_ret[i_open + 1:i_end + 1]).all()
@@ -397,7 +398,7 @@ def run_vol_account(fund_ret: np.ndarray, cash_ret: np.ndarray, sig: np.ndarray,
         eq[d] = float(h.sum())
     if book is not None:
         eq[i_end] -= book.liquidate(h)
-    return eq
+    return (eq, h) if return_holdings else eq
 
 
 def vol_block(frames: dict, *, n_paths: int = 10000, progress=print) -> dict:

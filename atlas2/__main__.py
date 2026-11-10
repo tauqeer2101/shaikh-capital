@@ -33,6 +33,10 @@ Commands:
                       data/cache/lab_series.sqlite3 and reused; --offline never
                       touches the network (fails if that cache is missing),
                       --refresh downloads them again.
+  leverage-signal [--offline] [--no-notify]
+                      paper-track lab 2's leverage rule on live prices
+                      (data/leverage_signal.json, the dashboard's Nasdaq signal
+                      tab); scan runs it too, every morning.
   lab-data [--refresh]
                       download past and present S&P 500 members' prices for
                       strategy-lab-2 into data/cache/lab_sp500.sqlite3 (never
@@ -122,6 +126,12 @@ def main() -> None:
         markets = [a for a in args[1:] if a in ("us", "de", "in")] or None
         run_scan(markets)
         scan_comeback()
+        try:                     # the Nasdaq signal tab; never lets a scan fail
+            from .leverage_signal import run_leverage_signal
+
+            run_leverage_signal()
+        except Exception as exc:
+            print(f"WARN Nasdaq signal not updated: {exc.__class__.__name__}: {exc}")
     elif cmd == "comeback":
         from .comeback import scan_comeback
 
@@ -163,6 +173,10 @@ def main() -> None:
         from .strategy_lab2 import main as strategy_lab2_main
 
         strategy_lab2_main(args[1:])
+    elif cmd == "leverage-signal":
+        from .leverage_signal import main as leverage_signal_main
+
+        leverage_signal_main(args[1:])
     elif cmd == "lab-data":
         from .lab_data import main as lab_data_main
 

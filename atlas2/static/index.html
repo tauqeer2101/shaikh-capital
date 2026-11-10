@@ -279,6 +279,21 @@
   .btbanner.bad { border-color: var(--bd-red); background: var(--tint-red); }
   .btbanner.good { border-color: var(--bd-green); background: var(--tint-green); }
   .btbanner .big { font-size: 15px; font-weight: 650; display: block; margin-bottom: 3px; }
+  .btbanner.calm { border-color: var(--bd-blue); background: var(--tint-blue); }
+  /* Nasdaq signal tab */
+  .lvcharts { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+              gap: 12px; margin-top: 12px; }
+  .lvchart svg { display: block; width: 100%; height: auto; }
+  .lvchart .ttl { font-weight: 600; color: var(--text); margin-bottom: 6px; }
+  .lvlegend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 11.5px; color: var(--dim);
+              margin-top: 6px; }
+  .lvlegend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px;
+                vertical-align: middle; margin-right: 5px; }
+  .lvbig { font-size: 26px; font-weight: 700; color: var(--text); letter-spacing: -.01em; }
+  .lvkv { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; margin-top: 6px; }
+  .lvkv > b { color: var(--dim); font-weight: 600; white-space: nowrap; }
+  .lvkv > span { color: var(--text); text-align: right; }
+  .lvwide { margin-top: 12px; }
   .btcards { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
              gap: 12px; margin-top: 12px; }
   .btcard { background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
@@ -400,6 +415,10 @@ the safety stop limits how much. Data: Yahoo Finance (free, may lag). Settings i
         and the alert say <b style="color:var(--red)">STOP HIT — sell</b> instead of "review",
         because holding past the stop once turned a planned 5% loss into 11%. The cap is
         <code>max_per_sector</code> in config.json.</li>
+      <li>The <b>⚡ Nasdaq signal</b> tab paper-tracks the one rule from the strategy labs that
+        beat simply holding the Nasdaq: leverage sized to the Nasdaq-100's recent swings (30% ÷
+        60-day volatility, at most 3×). It updates every morning and your Mac shows a
+        notification when the signal changes. Paper only — nothing is bought.</li>
     </ol>
     <h3>Words you'll see</h3>
     <div class="gloss">
@@ -419,7 +438,9 @@ the safety stop limits how much. Data: Yahoo Finance (free, may lag). Settings i
 
 <script>
 const MARKETS = { us: "🇺🇸 US", de: "🇩🇪 Germany", in: "🇮🇳 India",
-                  comeback: "💎 Comeback", journal: "📒 Journal", backtest: "🧪 Backtest" };
+                  comeback: "💎 Comeback", journal: "📒 Journal", backtest: "🧪 Backtest",
+                  leverage: "⚡ Nasdaq signal" };
+const PAGE_VIEWS = ["backtest", "leverage"];   // full-width pages drawn in #btview
 const FLAG = { us: "🇺🇸", de: "🇩🇪", in: "🇮🇳" };
 const REGIME_ICON = { healthy: "🟢", caution: "🟡", downtrend: "🔴", unknown: "⚪", off: "⚪" };
 let current = "us", scanData = null, chart = null, sel = null, lastChartCtx = null;
@@ -453,7 +474,7 @@ function tabs() {
   el("tabs").innerHTML = Object.entries(MARKETS).map(([k, label]) =>
     `<button class="tab ${k===current?'active':''}" onclick="switchMarket('${k}')">${label}</button>`).join("");
 }
-let lastView = "us";   // last non-backtest tab, restored when leaving the Backtest view
+let lastView = "us";   // last stock-list tab, restored when leaving a full-width page
 function showBacktestView(on) {
   document.querySelector("main").hidden = on;
   el("btview").hidden = !on;
@@ -461,10 +482,11 @@ function showBacktestView(on) {
 async function switchMarket(m) {
   current = m; tabs();
   wideMode = false;  // exit full-screen chart on navigation
-  showBacktestView(m === "backtest");
-  if (m !== "backtest") lastView = m;
+  showBacktestView(PAGE_VIEWS.includes(m));
+  if (!PAGE_VIEWS.includes(m)) lastView = m;
   if (m === "journal") await loadJournal();
   else if (m === "backtest") await loadBacktest();
+  else if (m === "leverage") await loadLeverage();
   else await loadScan();
 }
 
@@ -1146,7 +1168,7 @@ function onSearch() {
 async function pickStock(ticker) {
   el("sr").style.display = "none";
   el("q").value = ticker;
-  if (current === "backtest") {   // the analysis renders in the stock panel — go back to it
+  if (PAGE_VIEWS.includes(current)) {   // the analysis renders in the stock panel — go back to it
     current = lastView; tabs(); showBacktestView(false);
   }
   el("detail").innerHTML = `<div class="empty">Analyzing ${ticker}…<br>
@@ -1329,6 +1351,168 @@ async function loadBacktest() {
   }
   if (current !== "backtest") return;   // user already switched away
   box.innerHTML = renderBacktest(d);
+}
+
+/* ---------- Nasdaq signal (lab 2's leverage rule, paper-tracked) ---------- */
+async function loadLeverage() {
+  const box = el("btview");
+  box.innerHTML = `<div class="empty">Loading the Nasdaq signal…</div>`;
+  let r;
+  try {
+    r = await fetch("/api/leverage");
+  } catch (e) {
+    box.innerHTML = `<div class="empty">Connection hiccup — the Mac may be asleep or the network
+      dropped.<br><br><button class="btn" onclick="loadLeverage()">Try again</button></div>`;
+    return;
+  }
+  if (r.status === 401) { location.href = "/login"; return; }
+  let d;
+  try {
+    if (!r.ok) throw new Error(`server answered ${r.status}`);
+    d = await r.json();
+  } catch (e) {
+    box.innerHTML = `<div class="empty">Could not read the Nasdaq signal (${escH(e.message)}).<br><br>
+      <button class="btn" onclick="loadLeverage()">Try again</button></div>`;
+    return;
+  }
+  if (current !== "leverage") return;   // user already switched away
+  box.innerHTML = renderLeverage(d);
+}
+
+/* a small line chart as inline SVG: rows = [[date, y1, y2, ...]], one line per series */
+function lvChart(rows, series, { yMin = null, yMax = null, fmtY = v => v, step = false } = {}) {
+  const W = 640, H = 210, L = 46, R = 10, T = 10, B = 26;
+  const pts = (rows || []).filter(r => series.some(sr => Number.isFinite(r[sr.col])));
+  if (pts.length < 2) return "";
+  const ys = pts.flatMap(r => series.map(sr => r[sr.col])).filter(Number.isFinite);
+  let lo = yMin ?? Math.min(...ys), hi = yMax ?? Math.max(...ys);
+  if (hi - lo < 1e-9) { lo -= 1; hi += 1; }
+  const pad = (hi - lo) * 0.06;
+  if (yMin == null) lo -= pad;
+  if (yMax == null) hi += pad;
+  const x = i => L + (W - L - R) * i / (pts.length - 1);
+  const y = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
+  const ticks = [0, 1, 2, 3].map(k => lo + (hi - lo) * k / 3);
+  const grid = ticks.map(v => `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"
+      style="stroke:var(--chart-grid)"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end"
+      style="fill:var(--faint);font-size:11px">${escH(fmtY(v))}</text>`).join("");
+  const line = sr => {
+    let dpath = "";
+    pts.forEach((r, i) => {
+      const v = r[sr.col];
+      if (!Number.isFinite(v)) return;
+      if (!dpath) dpath = `M${x(i)},${y(v)}`;
+      else if (step) dpath += `H${x(i)}V${y(v)}`;
+      else dpath += `L${x(i)},${y(v)}`;
+    });
+    return `<path d="${dpath}" fill="none" style="stroke:${sr.color};stroke-width:2"/>`;
+  };
+  const xl = `<text x="${L}" y="${H - 6}" style="fill:var(--faint);font-size:11px">${escH(pts[0][0])}</text>
+    <text x="${W - R}" y="${H - 6}" text-anchor="end" style="fill:var(--faint);font-size:11px">${escH(pts[pts.length - 1][0])}</text>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img">${grid}${series.map(line).join("")}${xl}</svg>
+    <div class="lvlegend">${series.map(sr => `<span><i style="background:${sr.color}"></i>${escH(sr.name)}</span>`).join("")}</div>`;
+}
+
+function renderLeverage(d) {
+  if (!d || d.available === false)
+    return `<div class="empty"><b>No Nasdaq signal yet.</b><br><br>Run
+      <code>python -m atlas2 leverage-signal</code> (it also runs every morning at 07:30 with the
+      scan), then come back to this tab.${d?.error ? `<br><br><span class="faint">${escH(d.error)}</span>` : ""}</div>`;
+  const s = d.signal || {}, p = d.paper || {}, ev = d.evidence, dt = d.data || {};
+  const X = v => v == null ? "—" : `${Number(v).toFixed(2)}×`;
+  const P = (v, sign = false) => v == null ? "—"
+    : `${sign && v > 0 ? "+" : ""}${Number(v).toFixed(1)}%`;
+  const cls = v => v == null ? "" : v >= 0 ? "pos" : "neg";
+  const mix = (f, c) => `${P(f)} in a 3× Nasdaq-100 fund, ${P(c)} in T-bills / cash`;
+  const lc = s.last_change;
+  const banner = s.trade_due
+    ? `<div class="btbanner"><span class="big">⚡ Trade due at the next US close:
+        ${X(s.held)} → ${X(s.new)}</span>
+        The signal changed at the ${escH(d.as_of)} close. Paper trade at the next close:
+        ${mix(s.fund_share_pct, s.cash_share_pct)}.</div>`
+    : `<div class="btbanner calm"><span class="big">No trade due — keep ${X(s.new)}</span>
+        That is ${mix(s.fund_share_pct, s.cash_share_pct)}.
+        ${lc ? `Last change: ${X(lc.from)} → ${X(lc.to)} (signal at the ${escH(lc.signal_close)} close).` : ""}</div>`;
+  const stale = dt.stale || dt.warning || dt.note
+    ? `<div class="btbanner bad">${escH(dt.warning || dt.note || "prices may be out of date")}</div>` : "";
+  const trades = (p.trades || []).slice().reverse().map(t => `<tr>
+      <td>${escH(t.date)}</td><td class="n">${t.opening ? "start" : X(t.from)}</td>
+      <td class="n">${X(t.to)}</td><td class="n">${P(Number(t.to) / 3 * 100)}</td></tr>`).join("");
+  const curve = (p.curve || []).map(r => [r[0], r[1] * 10000, r[2] * 10000]);
+  const perf = curve.length >= 2
+    ? lvChart(curve, [{ col: 1, name: "Paper account", color: "var(--accent)" },
+                      { col: 2, name: "QQQ held", color: "var(--blue)" }],
+              { fmtY: v => Math.round(v).toLocaleString("en-US") })
+    : `<div class="faint">The first day's result shows after the next morning update.</div>`;
+  const lev = lvChart(d.history, [{ col: 1, name: "Leverage the rule held", color: "var(--accent)" }],
+                      { yMin: 0, yMax: 3, step: true, fmtY: v => `${v.toFixed(1)}×` });
+  const t = ev?.test || {}, f = ev?.full || {}, a = ev?.account_test_de || {};
+  const evidence = ev ? `<div class="btcard lvwide"><div class="mkt">Why this rule (backtest, strategy lab 2)</div>
+      <div class="btkv">
+        <b>${escH(t.span || "")}, not used to choose it</b>
+          <span>${P(t.cagr_pct)}/yr vs QQQ ${P(ev.qqq_test?.cagr_pct)}; worst fall
+          <span class="neg">${P(t.max_drawdown_pct)}</span> vs ${P(ev.qqq_test?.max_drawdown_pct)}
+          ${t.worst_year ? `(worst year ${escH(t.worst_year.year)}: ${P(t.worst_year.return_pct)})` : ""}</span>
+        <b>${escH(f.span || "")}, all history</b>
+          <span>${P(f.cagr_pct)}/yr vs Nasdaq ${P(ev.nasdaq_full?.cagr_pct)}; worst fall
+          ${P(f.max_drawdown_pct)} vs ${P(ev.nasdaq_full?.max_drawdown_pct)}</span>
+        <b>After German tax (estimate)</b>
+          <span>${P(a.account_after_tax_cagr_pct)}/yr (${P(a.account_after_tax_with_30pct_partial_exemption_pct)}
+          with the 30% exemption) vs QQQ held ${P(a.qqq_held_after_tax_cagr_pct)}
+          (${P(a.qqq_held_after_tax_with_30pct_partial_exemption_pct)})</span>
+        <b>40% a year?</b>
+          <span>in ${P(ev.rolling_10y?.share_ge_target_pct)} of past 10-year periods; in simulated
+          10-year futures ${P(ev.bootstrap?.p_cagr_ge_40_pct)} of the time — and a fall of more than
+          half along the way in ${P(ev.bootstrap?.p_max_drawdown_worse_than_50_pct)}</span>
+        <b>Real-fund check</b>
+          <span>with TQQQ's real prices ${P(ev.real_fund_check?.account_with_real_tqqq?.cagr_pct)}/yr vs the
+          model's ${P(ev.real_fund_check?.account_with_modelled_3x_fund?.cagr_pct)} (from
+          ${escH(ev.real_fund_check?.from || "")})</span>
+      </div></div>` : `<div class="btcard lvwide"><div class="mkt">Backtest</div>
+      Run <code>python -m atlas2 strategy-lab-2</code> to show the evidence behind the rule here.</div>`;
+  return `
+    <div class="bthead"><h2>⚡ Nasdaq signal</h2>
+      <span class="faint">prices to the ${escH(d.as_of)} close · updated ${btDate(d.generated)}</span></div>
+    <div class="btintro">Paper-tracking the one rule from the strategy labs that beat simply holding
+      the Nasdaq: <b>leverage = 30% ÷ the Nasdaq-100's volatility over the last 60 days, at most
+      3×</b>, changed only when it moves by 0.25 or more, traded at the next close — held as a 3×
+      Nasdaq-100 fund (leverage ÷ 3 of the account) plus T-bills. Nothing is bought: this tab
+      checks the rule on live prices before any real money follows it.</div>
+    ${stale}${banner}
+    <div class="btcards">
+      <div class="btcard"><div class="mkt">Today's reading</div>
+        <div class="lvbig">${X(s.new)}</div>
+        <div class="lvkv">
+          <b>Nasdaq-100 close</b><span>${fmt(d.ndx_close, 2)} (${escH(d.as_of)})</span>
+          <b>60-day volatility</b><span>${P(d.vol_60d_pct)} a year</span>
+          <b>Formula before the 0.25 band</b><span>${X(d.leverage_formula_now)}</span>
+          <b>Changes in the last year</b><span>${fmt(s.changes_last_year, 0)}</span>
+        </div></div>
+      <div class="btcard"><div class="mkt">Paper account since ${escH(p.start)}</div>
+        <div class="lvbig ${cls(p.return_pct)}">${P(p.return_pct, true)}</div>
+        <div class="lvkv">
+          <b>10,000 became</b><span>${fmt(p.value_per_10000, 0)}</span>
+          <b>QQQ held, same days</b><span class="${cls(p.qqq_return_pct)}">${P(p.qqq_return_pct, true)}</span>
+          <b>Worst fall so far</b><span>${P(p.max_drawdown_pct)} (QQQ ${P(p.qqq_max_drawdown_pct)})</span>
+          <b>Held now</b><span>${P(p.fund_pct_now)} in the 3× fund, ${P(p.cash_pct_now)} cash</span>
+        </div></div>
+    </div>
+    ${evidence}
+    <div class="lvcharts">
+      <div class="btcard lvchart"><div class="ttl">Paper account vs QQQ (per 10,000)</div>${perf}</div>
+      <div class="btcard lvchart"><div class="ttl">Leverage the rule held, last year</div>${lev}</div>
+    </div>
+    <h3>Paper trades</h3>
+    <div class="btpanel"><table class="bt narrow"><thead><tr>
+      <th>Close</th><th class="n">From</th><th class="n">To</th><th class="n">In the 3× fund</th>
+    </tr></thead><tbody>${trades || `<tr><td colspan="4" class="dim">None yet.</td></tr>`}</tbody></table></div>
+    <div class="btintro" style="margin-top:14px">How to read it: the signal is read after each US
+      close and a change is traded at the next close; this tab updates every morning at 07:30 and
+      your Mac shows a notification when the signal changes. The paper account uses TQQQ's real
+      prices and 0.10% per side, before tax. In Germany, US-listed funds such as TQQQ are usually
+      not available to private investors; European 3× Nasdaq-100 products differ in cost and
+      structure. Expect deep falls — the backtest lost 45% in 2022 and 67% in 2000–02.
+      <b>Paper tracking only, not investment advice.</b></div>`;
 }
 
 function renderBacktest(d) {

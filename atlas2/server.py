@@ -444,6 +444,21 @@ def _backtest_payload(bt_path: Path, cfg: dict) -> dict:
     return d
 
 
+LEVERAGE_SIGNAL_PATH = ROOT / "data" / "leverage_signal.json"
+
+
+@app.get("/api/leverage")
+def leverage_signal():
+    """The Nasdaq signal tab: the file `python -m atlas2 leverage-signal` writes
+    (every morning with the scan); {"available": false} until it exists."""
+    try:
+        return JSONResponse(json.loads(LEVERAGE_SIGNAL_PATH.read_text()))
+    except FileNotFoundError:
+        return JSONResponse({"available": False})
+    except (ValueError, OSError) as exc:
+        return JSONResponse({"available": False, "error": f"{exc.__class__.__name__}: {exc}"})
+
+
 @app.get("/api/backtest")
 def backtest_results():
     from .scan import load_config
