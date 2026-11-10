@@ -633,7 +633,9 @@ const tuneNames = l => escH(l.map(p => p.replaceAll("_", " ")).join(", "));
 /* why the list is empty: tuned-out patterns vs a genuinely quiet market */
 function emptyText(long) {
   const { pt, manual, auto, verdictText } = tuningSources();
-  const autoHint = `To see those setups anyway set <code>pattern_tuning.auto_disable=false</code> in config.json.`;
+  const autoHint = (scanData?.study_setups || []).length
+    ? `Their setups are listed below for study — not buy signals.`
+    : `To see those setups anyway set <code>pattern_tuning.auto_disable=false</code> in config.json.`;
   const manualHint = manual.length ? ` ${tuneNames(manual)} ${manual.length > 1 ? "are" : "is"} switched off
     manually in config.json (<code>pattern_tuning.disabled</code>) — remove ${manual.length > 1 ? "them" : "it"} there to see
     ${manual.length > 1 ? "their" : "its"} setups again.` : "";
